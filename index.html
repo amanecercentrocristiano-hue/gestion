@@ -117,6 +117,8 @@
     .chip-box input { border: 0; outline: 0; flex: 1; min-width: 180px; padding: 2px; background: transparent; }
     .chip { background: var(--cca-soft); color: var(--cca); border-radius: 20px; padding: 3px 6px 3px 10px; font-size: .82rem; display: inline-flex; align-items: center; gap: 4px; }
     .chip button { border: 0; background: transparent; color: inherit; padding: 0 2px; line-height: 1; }
+    .pp-menu { top: 100%; left: 0; max-height: 300px; overflow-y: auto; z-index: 1080; }
+    .pp-menu .dropdown-item { white-space: normal; }
     .map-frame { width: 100%; height: 220px; border: 0; border-radius: 10px; }
 
     /* Detalle */
@@ -334,8 +336,9 @@
 
           <div class="form-section">
             <div class="form-section-title"><i class="bi bi-people me-1"></i> Encargados y colaboradores de esta actividad</div>
-            <div class="mb-3"><label class="form-label">Encargados (correo + Enter)</label><div id="chips-encargados"></div></div>
-            <div class="mb-3"><label class="form-label">Colaboradores (correo + Enter)</label><div id="chips-colaboradores"></div>
+            <div class="small text-muted mb-2"><i class="bi bi-search me-1"></i>Buscá entre las personas ya cargadas en el sistema, o elegí <b>«Agregar persona nueva»</b> para cargar nombre y correo.</div>
+            <div class="mb-3"><label class="form-label">Encargados</label><div id="chips-encargados"></div></div>
+            <div class="mb-3"><label class="form-label">Colaboradores</label><div id="chips-colaboradores"></div>
               <div class="form-text">Los colaboradores reciben un aviso para confirmar su participación; quienes acepten reciben la invitación de Google Calendar y los recordatorios.</div></div>
             <datalist id="dl-personas"></datalist>
           </div>
@@ -381,7 +384,7 @@
             <div class="col-12"><label class="form-label">¿Qué hay que hacer? *</label><input class="form-control t-full" id="t-titulo" maxlength="150" placeholder="Ej.: Reservar el predio del retiro"></div>
             <div class="col-md-6"><label class="form-label">Etapa</label><input class="form-control t-full" id="t-etapa" list="dl-etapas" maxlength="60" placeholder="Planificación, Logística…"><datalist id="dl-etapas"></datalist></div>
             <div class="col-md-6"><label class="form-label">Prioridad</label><select class="form-select t-full" id="t-prioridad"></select></div>
-            <div class="col-md-6"><label class="form-label">Responsable (correo)</label><input type="email" class="form-control t-full" id="t-responsable" list="dl-personas" placeholder="correo@ejemplo.com"><div class="form-text">Recibe un aviso y recordatorios antes del plazo.</div></div>
+            <div class="col-md-6"><label class="form-label">Responsable</label><div id="t-responsable"></div><div class="form-text">Buscalo en el sistema o agregá nombre + correo. Recibe un aviso y recordatorios antes del plazo.</div></div>
             <div class="col-md-6"><label class="form-label">Plazo (fecha límite)</label><input type="date" class="form-control t-full" id="t-fecha"><div class="form-text" id="t-fecha-ayuda"></div></div>
             <div class="col-12"><label class="form-label">Detalle / indicaciones</label><textarea class="form-control t-full" id="t-descripcion" rows="2" maxlength="1500"></textarea></div>
             <div class="col-md-6"><label class="form-label">Estado</label><select class="form-select" id="t-estado"></select></div>
@@ -1240,7 +1243,14 @@
     $('#t-titulo').value = t ? t.titulo : '';
     $('#t-etapa').value = t ? t.etapa : '';
     $('#t-prioridad').value = t ? t.prioridad : 'MEDIA';
-    $('#t-responsable').value = t ? t.responsable : '';
+    const resp = t && t.responsable ? [{ email: t.responsable, nombre: t.responsableNombre }] : [];
+    if (full) {
+      S.respPicker = personPicker($('#t-responsable'), { multiple: false, placeholder: 'Buscar o agregar responsable…' });
+      S.respPicker.set(resp);
+    } else {
+      S.respPicker = { get: () => resp };
+      $('#t-responsable').innerHTML = `<div class="form-control bg-light">${esc(t.responsableNombre || t.responsable || 'Sin responsable')}</div>`;
+    }
     $('#t-fecha').value = t ? t.fechaLimite : '';
     $('#t-descripcion').value = t ? t.descripcion : '';
     $('#t-estado').value = t ? t.estado : 'PENDIENTE';
@@ -1262,7 +1272,8 @@
     const payload = {
       id: $('#t-id').value, eventoId: S.proyecto.evento.id,
       titulo: $('#t-titulo').value.trim(), etapa: $('#t-etapa').value.trim(), prioridad: $('#t-prioridad').value,
-      responsable: $('#t-responsable').value.trim().toLowerCase(), fechaLimite: $('#t-fecha').value,
+      responsable: (S.respPicker.get()[0] || {}).email || '', responsableNombre: (S.respPicker.get()[0] || {}).nombre || '',
+      fechaLimite: $('#t-fecha').value,
       descripcion: $('#t-descripcion').value.trim(), estado: $('#t-estado').value,
       enlace: $('#t-enlace').value.trim(), notas: $('#t-notas').value.trim()
     };
@@ -1520,35 +1531,101 @@
   }
 
   /* ------------------------------ FORMULARIO DE EVENTO ------------------------------ */
-  function chipInput(root, placeholder) {
+  /**
+   * Selector de personas: busca por nombre o correo entre las ya cargadas en el sistema
+   * y permite agregar una persona nueva con NOMBRE + CORREO. Valores: [{email, nombre}].
+   */
+  function personPicker(root, opts) {
+    opts = Object.assign({ multiple: true, placeholder: 'Buscar por nombre o correo…' }, opts);
     let values = [];
-    root.innerHTML = `<div class="chip-box form-control"><span class="chips d-contents"></span><input type="email" list="dl-personas" placeholder="${esc(placeholder)}"></div>`;
-    const box = $('.chip-box', root), input = $('input', root), chips = $('.chips', root);
-    chips.style.display = 'contents';
+    root.innerHTML = `<div class="pp position-relative">
+      <div class="chip-box form-control"><span class="chips" style="display:contents"></span><input type="text" autocomplete="off" placeholder="${esc(opts.placeholder)}"></div>
+      <div class="pp-menu dropdown-menu w-100 shadow"></div>
+      <div class="pp-nuevo border rounded p-2 mt-2 d-none bg-light">
+        <div class="small fw-semibold mb-2"><i class="bi bi-person-plus me-1"></i>Agregar persona nueva</div>
+        <div class="row g-2">
+          <div class="col-sm-5"><input class="form-control form-control-sm pp-nombre" maxlength="100" placeholder="Nombre y apellido"></div>
+          <div class="col-sm-5"><input type="email" class="form-control form-control-sm pp-email" placeholder="correo@ejemplo.com"></div>
+          <div class="col-sm-2 d-flex gap-1"><button type="button" class="btn btn-sm btn-primary flex-fill pp-ok">Agregar</button><button type="button" class="btn btn-sm btn-light pp-cancel" title="Cancelar">&times;</button></div>
+        </div>
+      </div></div>`;
+    const box = $('.chip-box', root), input = $('input', box), chips = $('.chips', root), menu = $('.pp-menu', root), nuevo = $('.pp-nuevo', root);
+    const dir = () => S.boot.directorio || (S.boot.directorio = []);
     const render = () => {
-      chips.innerHTML = values.map((v, i) => `<span class="chip" title="${esc(v)}">${esc(nombrePersona(v))}<button type="button" data-i="${i}" aria-label="Quitar">&times;</button></span>`).join('');
+      chips.innerHTML = values.map((v, i) => `<span class="chip" title="${esc(v.email)}">${esc(v.nombre || nombrePersona(v.email))}<button type="button" data-i="${i}" aria-label="Quitar">&times;</button></span>`).join('');
+      const lleno = !opts.multiple && values.length > 0;
+      input.style.display = lleno ? 'none' : '';
     };
-    const add = raw => {
-      String(raw).split(/[,;\s]+/).map(x => x.trim().toLowerCase()).filter(Boolean).forEach(v => {
-        if (!isEmail(v)) { toast('Correo inválido: ' + v, 'warning'); return; }
-        if (!values.includes(v)) values.push(v);
-      });
+    const cerrar = () => menu.classList.remove('show');
+    const add = p => {
+      if (!p) return;
+      const v = { email: String(p.email || '').trim().toLowerCase(), nombre: String(p.nombre || '').trim() };
+      if (!isEmail(v.email)) return toast('Correo inválido: ' + v.email, 'warning');
+      if (!opts.multiple) values = [];
+      const ya = values.find(x => x.email === v.email);
+      if (ya) { if (v.nombre) ya.nombre = v.nombre; } else values.push(v);
+      if (!dir().some(x => x.email === v.email)) dir().push({ email: v.email, nombre: v.nombre, areas: [] });
       input.value = '';
+      cerrar();
       render();
     };
+    const abrir = () => {
+      const q = input.value.trim().toLowerCase();
+      const res = dir().filter(p => !values.some(v => v.email === p.email) && (!q || (p.nombre + ' ' + p.email).toLowerCase().includes(q)))
+        .sort((a, b) => (a.nombre || a.email).localeCompare(b.nombre || b.email)).slice(0, 8);
+      menu.innerHTML = res.map(p => `<button type="button" class="dropdown-item" data-email="${esc(p.email)}">
+          <div class="fw-semibold small text-truncate">${esc(p.nombre || p.email)}</div>
+          <div class="small text-muted text-truncate">${esc(p.email)}${p.areas.length ? ' · ' + esc(p.areas.join(', ')) : ''}</div></button>`).join('') +
+        (res.length ? '<div class="dropdown-divider"></div>' : (q ? '<div class="dropdown-item-text small text-muted">No hay nadie cargado con ese nombre o correo.</div>' : '')) +
+        `<button type="button" class="dropdown-item text-primary pp-add-new"><i class="bi bi-person-plus me-1"></i>Agregar persona nueva (nombre + correo)</button>`;
+      menu.classList.add('show');
+      menu.scrollIntoView({ block: 'nearest' }); // que no quede tapado al final del formulario
+    };
+    const mostrarNuevo = q => {
+      cerrar();
+      nuevo.classList.remove('d-none');
+      const n = $('.pp-nombre', nuevo), e = $('.pp-email', nuevo);
+      n.value = isEmail(q) ? '' : q; e.value = isEmail(q) ? q : '';
+      (n.value ? e : n).focus();
+    };
+    const confirmarNuevo = () => {
+      const n = $('.pp-nombre', nuevo).value.trim(), e = $('.pp-email', nuevo).value.trim().toLowerCase();
+      if (!n) { $('.pp-nombre', nuevo).focus(); return toast('Ingresá el nombre de la persona.', 'warning'); }
+      if (!isEmail(e)) { $('.pp-email', nuevo).focus(); return toast('Ingresá un correo válido.', 'warning'); }
+      add({ email: e, nombre: n });
+      nuevo.classList.add('d-none');
+      $('.pp-nombre', nuevo).value = ''; $('.pp-email', nuevo).value = '';
+    };
+    input.addEventListener('focus', abrir);
+    input.addEventListener('input', abrir);
+    input.addEventListener('blur', () => setTimeout(cerrar, 150));
     input.addEventListener('keydown', e => {
-      if (['Enter', ',', ';', 'Tab'].includes(e.key) && input.value.trim()) { e.preventDefault(); add(input.value); }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const q = input.value.trim();
+        if (!q) return;
+        const primero = $('[data-email]', menu);
+        if (primero) add(dir().find(p => p.email === primero.dataset.email)); else mostrarNuevo(q);
+      } else if (e.key === 'Escape') cerrar();
       else if (e.key === 'Backspace' && !input.value && values.length) { values.pop(); render(); }
     });
-    input.addEventListener('change', () => { if (isEmail(input.value.trim())) add(input.value); });
-    input.addEventListener('blur', () => { if (input.value.trim()) add(input.value); });
+    menu.addEventListener('mousedown', e => e.preventDefault());
+    menu.addEventListener('click', e => {
+      const b = e.target.closest('button');
+      if (!b) return;
+      if (b.classList.contains('pp-add-new')) mostrarNuevo(input.value.trim());
+      else add(dir().find(p => p.email === b.dataset.email));
+    });
     box.addEventListener('click', e => {
       const b = e.target.closest('button[data-i]');
-      if (b) { values.splice(+b.dataset.i, 1); render(); } else input.focus();
+      if (b) { values.splice(+b.dataset.i, 1); render(); if (!opts.multiple) input.focus(); } else input.focus();
     });
+    $('.pp-ok', nuevo).addEventListener('click', confirmarNuevo);
+    $('.pp-cancel', nuevo).addEventListener('click', () => nuevo.classList.add('d-none'));
+    $$('input', nuevo).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); confirmarNuevo(); } }));
     return {
-      get: () => { if (input.value.trim()) add(input.value); return values.slice(); },
-      set: arr => { values = (arr || []).slice(); render(); }
+      get: () => values.map(v => ({ email: v.email, nombre: v.nombre })),
+      set: arr => { values = (arr || []).map(v => typeof v === 'string' ? { email: v, nombre: '' } : { email: v.email, nombre: v.nombre || '' }); render(); }
     };
   }
 
@@ -1584,10 +1661,10 @@
     } else if (deps.length === 1) {
       $('#f-departamento').value = deps[0];
     }
-    S.chips.enc = chipInput($('#chips-encargados'), 'correo@ejemplo.com');
-    S.chips.col = chipInput($('#chips-colaboradores'), 'correo@ejemplo.com');
-    S.chips.enc.set(ev ? ev.participantes.filter(p => p.rol === 'ENCARGADO').map(p => p.email) : [u.email]);
-    S.chips.col.set(ev ? ev.participantes.filter(p => p.rol === 'COLABORADOR').map(p => p.email) : []);
+    S.chips.enc = personPicker($('#chips-encargados'));
+    S.chips.col = personPicker($('#chips-colaboradores'));
+    S.chips.enc.set(ev ? ev.participantes.filter(p => p.rol === 'ENCARGADO') : [{ email: u.email, nombre: u.nombre }]);
+    S.chips.col.set(ev ? ev.participantes.filter(p => p.rol === 'COLABORADOR') : []);
     $('#map-preview').innerHTML = '';
     $('#f-conflictos').innerHTML = '';
     actualizarFormulario();
