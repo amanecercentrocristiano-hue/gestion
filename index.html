@@ -845,6 +845,9 @@
         ${u.perfilIncompleto ? `<div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-4">
           <i class="bi bi-person-vcard fs-4"></i><div class="flex-grow-1">Completá tu perfil con tu celular y en qué te gusta servir, así el equipo puede contactarte por WhatsApp.</div>
           <button class="btn btn-sm btn-primary" data-act="mi-perfil">Completar perfil</button></div>` : ''}
+        ${d.correo && (d.correo.omitidos || d.correo.quedan < d.correo.reserva + 20) ? `<div class="alert alert-warning small d-flex gap-2 mb-4"><i class="bi bi-envelope-exclamation fs-5"></i><div>
+          Quedan <b>${d.correo.quedan}</b> correos disponibles hoy (Gmail permite ~100 por día; ${d.correo.reserva} quedan reservados para los códigos de acceso).
+          ${d.correo.omitidos ? `Hoy no se enviaron <b>${d.correo.omitidos}</b> aviso(s) por falta de cupo: los recordatorios se reintentan solos cuando haya cupo, y para lo urgente podés usar <a href="#" data-act="go" data-view="whatsapp">Avisos WhatsApp</a>.` : ''}</div></div>` : ''}
         <div class="row g-3 mb-4">
           ${kpi('calendar-week', 'Eventos en los próximos 7 días', d.kpis.semana, 'eventos', 'primary')}
           ${kpi('hourglass-split', 'Pendientes de aprobación', d.kpis.pendientes, u.isSuper ? 'aprobaciones' : 'eventos', 'warning')}
