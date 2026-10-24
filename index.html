@@ -222,6 +222,7 @@
             <li><h6 class="dropdown-header" id="u-email"></h6></li>
             <li><div class="px-3 pb-2 small text-muted" id="u-areas"></div></li>
             <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="#" data-act="mi-perfil"><i class="bi bi-person-vcard me-2"></i>Mi perfil</a></li>
             <li><a class="dropdown-item" href="#" data-act="refrescar"><i class="bi bi-arrow-clockwise me-2"></i>Actualizar datos</a></li>
             <li><a class="dropdown-item text-danger" href="#" data-act="salir"><i class="bi bi-box-arrow-right me-2"></i>Cerrar sesión</a></li>
           </ul>
@@ -397,6 +398,54 @@
     </div>
   </div>
 
+  <!-- ======================= MODAL: PERFIL ======================= -->
+  <div class="modal fade" id="modal-perfil" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-md-down">
+      <form class="modal-content" id="form-perfil" novalidate>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="p-titulo">Mi perfil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="p-email">
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-person-vcard me-1"></i> Datos de contacto</div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-6"><label class="form-label">Nombre y apellido *</label><input class="form-control" id="p-nombre" maxlength="100"></div>
+              <div class="col-md-6"><label class="form-label">Correo</label><input class="form-control" id="p-email-ver" disabled></div>
+              <div class="col-md-6"><label class="form-label">Celular (WhatsApp)</label>
+                <div class="input-group"><span class="input-group-text text-success"><i class="bi bi-whatsapp"></i></span><input type="tel" class="form-control" id="p-telefono" maxlength="30" placeholder="Ej.: 11 2345-6789"></div>
+                <div class="form-text" id="p-wa-ayuda">Con característica, sin 0 ni 15 (igual los quitamos si los ponés).</div></div>
+              <div class="col-md-6 d-flex align-items-center"><div class="form-check form-switch mt-md-4">
+                <input class="form-check-input" type="checkbox" id="p-whatsapp" checked>
+                <label class="form-check-label" for="p-whatsapp">Compartir mi celular con los organizadores para que me contacten por WhatsApp</label></div></div>
+            </div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-stars me-1"></i> ¿En qué te gusta servir?</div>
+            <div class="small text-muted mb-2">Ayuda a los encargados a encontrar a quién convocar para cada actividad.</div>
+            <div class="row g-2 mb-3" id="p-habilidades"></div>
+            <label class="form-label">Disponibilidad habitual</label>
+            <div class="d-flex flex-wrap gap-2 mb-2" id="p-dias"></div>
+            <div class="d-flex flex-wrap gap-2 mb-3" id="p-franjas"></div>
+            <div class="form-check form-switch mb-3"><input class="form-check-input" type="checkbox" id="p-vehiculo"><label class="form-check-label" for="p-vehiculo">Tengo vehículo y puedo colaborar con traslados</label></div>
+          </div>
+          <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-shield-lock me-1"></i> Datos personales <span class="text-muted text-lowercase fw-normal">(privados)</span></div>
+            <div class="small text-muted mb-3"><i class="bi bi-lock me-1"></i>Solo los ven Pastores, Administración, Secretaría y los encargados de tus áreas. Son útiles para retiros, campamentos y emergencias.</div>
+            <div class="row g-3 mb-3">
+              <div class="col-md-4"><label class="form-label">Fecha de nacimiento</label><input type="date" class="form-control" id="p-nacimiento"></div>
+              <div class="col-md-5"><label class="form-label">Dirección</label><input class="form-control" id="p-direccion" maxlength="200"></div>
+              <div class="col-md-3"><label class="form-label">Localidad / barrio</label><input class="form-control" id="p-localidad" maxlength="100"></div>
+              <div class="col-md-6"><label class="form-label">Contacto de emergencia</label><input class="form-control" id="p-emergencia" maxlength="100" placeholder="Nombre y vínculo"></div>
+              <div class="col-md-6"><label class="form-label">Teléfono de emergencia</label><input type="tel" class="form-control" id="p-tel-emergencia" maxlength="30"></div>
+              <div class="col-12"><label class="form-label">Salud: alergias, medicación o restricciones alimentarias</label><textarea class="form-control" id="p-salud" rows="2" maxlength="1000"></textarea></div>
+              <div class="col-12"><label class="form-label">Otros datos útiles</label><textarea class="form-control" id="p-notas" rows="2" maxlength="1000"></textarea></div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="p-guardar"><i class="bi bi-save me-1"></i>Guardar perfil</button></div>
+      </form>
+    </div>
+  </div>
+
   <!-- ======================= MODAL: MIEMBRO ======================= -->
   <div class="modal fade" id="modal-miembro" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
@@ -461,7 +510,7 @@
     CONFIRMA_PARTICIPACION: 'Confirmó participación', DECLINA_PARTICIPACION: 'Declinó participación',
     TESORERIA_VISTO_BUENO: 'Visto bueno Tesorería', TESORERIA_OBSERVA: 'Tesorería observó', RECORDATORIO: 'Recordatorio enviado',
     ASIGNAR_MIEMBRO: 'Asignó miembro', ACTUALIZAR_MIEMBRO: 'Actualizó miembro', QUITAR_MIEMBRO: 'Quitó miembro',
-    CONFIGURACION: 'Configuración', AVISO_EQUIPO: 'Aviso a equipo',
+    CONFIGURACION: 'Configuración', AVISO_EQUIPO: 'Aviso a equipo', PERFIL: 'Perfil',
     TAREA_CREAR: 'Agregó paso', TAREA_EDITAR: 'Actualizó paso', TAREA_COMPLETAR: 'Completó paso', TAREA_BORRAR: 'Borró paso',
     PLANTILLA: 'Cargó pasos sugeridos', PLAN_COMPLETO: 'Plan completo', RECORDATORIO_TAREA: 'Recordatorio de plazo', SETUP: 'Instalación', ERROR_CORREO: 'Error de correo', CORREO_SIN_CUOTA: 'Sin cuota de correo'
   };
@@ -781,6 +830,9 @@
           <div class="text-muted small">${DOW_LARGO[hoy.getDay()]} ${hoy.getDate()} de ${MESES_LARGOS[hoy.getMonth()]} · ${esc(u.rolLabel)}</div></div>
           ${u.canCreate ? '<button class="btn btn-sun" data-act="nuevo"><i class="bi bi-plus-lg me-1"></i>Nuevo evento</button>' : ''}
         </div>
+        ${u.perfilIncompleto ? `<div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-4">
+          <i class="bi bi-person-vcard fs-4"></i><div class="flex-grow-1">Completá tu perfil con tu celular y en qué te gusta servir, así el equipo puede contactarte por WhatsApp.</div>
+          <button class="btn btn-sm btn-primary" data-act="mi-perfil">Completar perfil</button></div>` : ''}
         <div class="row g-3 mb-4">
           ${kpi('calendar-week', 'Eventos en los próximos 7 días', d.kpis.semana, 'eventos', 'primary')}
           ${kpi('hourglass-split', 'Pendientes de aprobación', d.kpis.pendientes, u.isSuper ? 'aprobaciones' : 'eventos', 'warning')}
@@ -803,6 +855,9 @@
               <div class="card-body py-1">${d.misTareas.map(t => filaTarea(t, { conEvento: true })).join('')}</div></div>` : ''}
             ${d.proyectos.length ? `<div class="card mb-4"><div class="card-header"><i class="bi bi-kanban me-1"></i>Proyectos en preparación</div><div class="card-body">
               ${d.proyectos.map(e => `<div class="mb-3" role="button" data-act="proyecto" data-id="${esc(e.id)}"><div class="d-flex justify-content-between small mb-1"><span class="fw-semibold text-truncate me-2">${esc(e.titulo)}</span><span class="text-muted text-nowrap">${e.progreso.pct}% · ${fmtCorta(e.inicio).slice(0, 10)}</span></div>${barra(e.progreso.pct)}${e.progreso.vencidas ? `<div class="small due-late mt-1">${e.progreso.vencidas} paso(s) vencido(s)</div>` : ''}</div>`).join('')}
+            </div></div>` : ''}
+            ${d.cumpleanos.length ? `<div class="card mb-4"><div class="card-header"><i class="bi bi-cake2 me-1"></i>Cumpleaños de ${MESES_LARGOS[hoy.getMonth()]}</div><div class="card-body py-2">
+              ${d.cumpleanos.map(c => `<div class="person"><span class="avatar">${c.dia}</span><div class="flex-grow-1 min-w-0 small"><a href="#" class="text-reset fw-semibold" data-act="ver-perfil" data-email="${esc(c.email)}">${esc(c.nombre)}</a>${c.dia === hoy.getDate() ? ' <span class="badge text-bg-warning">¡Hoy!</span>' : ''}</div>${c.wa ? `<a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="${esc(waLink(c.wa, `¡Feliz cumpleaños ${c.nombre.split(' ')[0]}! Que Dios te bendiga mucho. 🎉 Centro Cristiano Amanecer`))}"><i class="bi bi-whatsapp"></i> Saludar</a>` : ''}</div>`).join('')}
             </div></div>` : ''}
             <div class="card mb-4"><div class="card-header"><i class="bi bi-person-badge me-1"></i>Mis próximas actividades</div>
               <div class="card-body">${d.mios.length ? d.mios.map(e => eventCard(e)).join('') : empty('emoji-smile', 'No tenés actividades asignadas próximamente.')}</div></div>
@@ -931,19 +986,22 @@
     const dep = filtro !== undefined ? filtro : ($('#eq-dep') ? $('#eq-dep').value : '');
     const q = $('#eq-q') ? $('#eq-q').value.trim().toLowerCase() : '';
     const cargo = $('#eq-cargo') ? $('#eq-cargo').value : '';
+    const hab = $('#eq-hab') ? $('#eq-hab').value : '';
+    const pf = e => d.perfiles[e] || { wa: '', habilidades: [], vehiculo: false };
     const editables = new Set(d.miembros.filter(m => m.editable).map(m => m.email));
-    const orden = { SUPERADMIN: 0, ADMIN: 1, PASTOR: 2, ENCARGADO: 3, COLABORADOR: 4 };
-    const grupos = (u.isAdmin ? d.departamentos : u.encargadoDe).filter(x => !dep || x === dep);
+    const orden = { SUPERADMIN: 0, ADMIN: 1, PASTOR: 2, SECRETARIA: 3, ENCARGADO: 4, COLABORADOR: 5 };
+    const grupos = d.departamentos.filter(x => !dep || x === dep);
     const html = grupos.map(g => {
-      const ms = d.miembros.filter(m => m.departamento === g && (!q || (m.nombre + ' ' + m.email).toLowerCase().includes(q)) && (!cargo || m.cargos.includes(cargo)))
+      const ms = d.miembros.filter(m => m.departamento === g && (!q || (m.nombre + ' ' + m.email).toLowerCase().includes(q)) &&
+        (!cargo || m.cargos.includes(cargo)) && (!hab || (hab === '__vehiculo' ? pf(m.email).vehiculo : pf(m.email).habilidades.includes(hab))))
         .sort((a, b) => orden[a.rol] - orden[b.rol] || a.nombre.localeCompare(b.nombre));
-      if ((q || cargo) && !ms.length) return '';
+      if ((q || cargo || hab) && !ms.length) return '';
       return `<div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-header d-flex justify-content-between align-items-center">
         <span class="text-truncate">${esc(g)}</span><span class="badge rounded-pill text-bg-light">${ms.length}</span></div>
         <div class="card-body py-2">${ms.length ? ms.map(m => {
-          const puedeQuitar = u.isAdmin || (m.rol === 'COLABORADOR' && u.encargadoDe.includes(m.departamento));
+          const puedeQuitar = m.editable;
           return `<div class="person"><span class="avatar">${esc(initials(m.nombre))}</span>
-            <div class="flex-grow-1 min-w-0"><div class="text-truncate fw-semibold small">${esc(m.nombre)}${m.cargos.map(k => ` <span class="badge rounded-pill text-bg-warning fw-normal">${esc(d.cargos[k])}</span>`).join('')}</div><div class="text-truncate small text-muted">${esc(m.email)}${(() => { const n = new Set(d.miembros.filter(x => x.email === m.email).map(x => x.departamento)).size; return n > 1 ? ` · ${n} áreas` : ''; })()}</div></div>
+            <div class="flex-grow-1 min-w-0"><div class="text-truncate fw-semibold small"><a href="#" class="text-reset" data-act="ver-perfil" data-email="${esc(m.email)}">${esc(m.nombre)}</a>${waBtn(pf(m.email).wa, m.nombre)}${pf(m.email).vehiculo ? ' <i class="bi bi-car-front text-muted" title="Tiene vehículo"></i>' : ''}${m.cargos.map(k => ` <span class="badge rounded-pill text-bg-warning fw-normal">${esc(d.cargos[k])}</span>`).join('')}</div><div class="text-truncate small text-muted">${esc(m.email)}${(() => { const n = new Set(d.miembros.filter(x => x.email === m.email).map(x => x.departamento)).size; return n > 1 ? ` · ${n} áreas` : ''; })()}</div></div>
             <span class="badge ${m.rol === 'COLABORADOR' ? 'text-bg-light' : 'text-bg-primary'}">${esc(d.rolLabels[m.rol])}</span>
             ${editables.has(m.email) ? `<button class="btn btn-sm btn-link p-0 ms-1" title="Editar áreas y cargos" data-act="editar-persona" data-email="${esc(m.email)}"><i class="bi bi-pencil"></i></button>` : ''}
             ${puedeQuitar ? `<button class="btn btn-sm btn-link text-danger p-0 ms-1" title="Quitar" data-act="quitar-miembro" data-email="${esc(m.email)}" data-rol="${esc(m.rol)}" data-dep="${esc(m.departamento)}"><i class="bi bi-person-dash"></i></button>` : ''}
@@ -954,16 +1012,16 @@
     if (!$('#eq-grid')) {
       el.innerHTML = `
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : 'Asigná colaboradores a tus áreas por correo electrónico.'}</div></div>
+          <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : u.isSecretaria ? 'Asigná encargados y colaboradores de cualquier área.' : 'Asigná colaboradores a tus áreas por correo electrónico.'} Tocá un nombre para ver su perfil.</div></div>
           <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Agregar persona</button>
         </div>
-        <div class="row g-2 mb-3"><div class="col-md-5"><input class="form-control" id="eq-q" placeholder="Buscar persona…"></div>
-        <div class="col-6 col-md-4"><select class="form-select" id="eq-dep"><option value="">Todas mis áreas</option>${(u.isAdmin ? d.departamentos : u.encargadoDe).map(x => `<option>${esc(x)}</option>`).join('')}</select></div>
-        <div class="col-6 col-md-3"><select class="form-select" id="eq-cargo"><option value="">Todos los cargos</option>${Object.keys(d.cargos).map(k => `<option value="${k}">${esc({ DIACONO: 'Diáconos', OBRERO: 'Obreros' }[k] || d.cargos[k])}</option>`).join('')}</select></div></div>
+        <div class="row g-2 mb-3"><div class="col-md-3"><input class="form-control" id="eq-q" placeholder="Buscar persona…"></div>
+        <div class="col-6 col-md-3"><select class="form-select" id="eq-dep"><option value="">Todas las áreas</option>${d.departamentos.map(x => `<option>${esc(x)}</option>`).join('')}</select></div>
+        <div class="col-6 col-md-3"><select class="form-select" id="eq-cargo"><option value="">Todos los cargos</option>${Object.keys(d.cargos).map(k => `<option value="${k}">${esc({ DIACONO: 'Diáconos', OBRERO: 'Obreros' }[k] || d.cargos[k])}</option>`).join('')}</select></div>
+        <div class="col-md-3"><select class="form-select" id="eq-hab"><option value="">Cualquier habilidad</option><option value="__vehiculo">🚗 Con vehículo</option>${d.habilidades.map(h => `<option>${esc(h)}</option>`).join('')}</select></div></div>
         <div class="row g-3" id="eq-grid"></div>`;
       $('#eq-q').addEventListener('input', () => renderEquipos());
-      $('#eq-dep').addEventListener('change', () => renderEquipos());
-      $('#eq-cargo').addEventListener('change', () => renderEquipos());
+      ['#eq-dep', '#eq-cargo', '#eq-hab'].forEach(s => $(s).addEventListener('change', () => renderEquipos()));
     }
     $('#eq-grid').innerHTML = html || `<div class="col-12">${empty('people', 'No se encontraron personas.')}</div>`;
   }
@@ -971,14 +1029,16 @@
     SUPERADMIN: 'Pastor/a Principal: acceso total y aprobación de eventos.',
     ADMIN: 'Administración: gestiona equipos y configuración (no aprueba eventos).',
     PASTOR: 'Pastor/a: ve toda la agenda y puede crear eventos para cualquier área.',
+    SECRETARIA: 'Secretaría: ve toda la agenda, crea eventos, carga personas y ve perfiles y bitácora (no aprueba).',
     ENCARGADO: 'Encargado/a: crea y edita eventos del área y asigna colaboradores.',
     COLABORADOR: 'Colaborador/a: ve los eventos aprobados de su área, recibe asignaciones y recordatorios.'
   };
   function filaAsignacion(a) {
     const d = S.miembros, u = S.boot.user;
-    const deps = u.isAdmin ? d.departamentos : u.encargadoDe;
-    const pastoral = a.rol === 'SUPERADMIN' || a.rol === 'PASTOR';
-    const dep = pastoral ? 'Pastores' : a.departamento;
+    const deps = d.departamentos;
+    const fija = d.areasFijas[a.rol];
+    const pastoral = !!fija;
+    const dep = fija || a.departamento;
     return `<div class="row g-2 mb-2 asig align-items-center">
       <div class="col-5"><select class="form-select form-select-sm" data-f="rol" title="${esc(AYUDA_ROL[a.rol] || '')}">${d.roles.map(r => `<option value="${r}" ${r === a.rol ? 'selected' : ''}>${esc(d.rolLabels[r])}</option>`).join('')}</select></div>
       <div class="col-6"><select class="form-select form-select-sm" data-f="dep" ${pastoral ? 'disabled' : ''}>${deps.map(x => `<option ${x === dep ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
@@ -998,7 +1058,7 @@
     $('#m-cargos-wrap').classList.toggle('d-none', !d.puedeCargos);
     $('#m-cargos').innerHTML = Object.keys(d.cargos).map(k => `<div class="form-check"><input class="form-check-input" type="checkbox" id="m-cargo-${k}" value="${k}" ${cargos.includes(k) ? 'checked' : ''}><label class="form-check-label" for="m-cargo-${k}">${esc(d.cargos[k])}</label></div>`).join('');
     const sel = $('#eq-dep') && $('#eq-dep').value;
-    const iniciales = propias.length ? propias : [{ rol: 'COLABORADOR', departamento: sel || (u.isAdmin ? d.departamentos[0] : u.encargadoDe[0]) }];
+    const iniciales = propias.length ? propias : [{ rol: 'COLABORADOR', departamento: sel || d.departamentos[0] }];
     $('#m-asignaciones').innerHTML = iniciales.map(filaAsignacion).join('');
     $('#m-otras').innerHTML = ajenas.length ? '<i class="bi bi-info-circle me-1"></i>También es: ' + ajenas.map(m => `${esc(d.rolLabels[m.rol])} en ${esc(m.departamento)}`).join(' · ') : '';
     bootstrap.Modal.getOrCreateInstance('#modal-miembro').show();
@@ -1128,7 +1188,7 @@
     o = o || {};
     const done = t.estado === 'COMPLETADA';
     const st = ESTADOS_T[t.estado] || ESTADOS_T.PENDIENTE;
-    const resp = t.responsable ? `<span><i class="bi bi-person"></i>${esc(t.responsableNombre || t.responsable)}</span>` : '<span class="due-soon"><i class="bi bi-person-exclamation"></i>Sin responsable</span>';
+    const resp = t.responsable ? `<span><i class="bi bi-person"></i>${esc(t.responsableNombre || t.responsable)}${waBtn(waDe(t.responsable), t.responsableNombre)}</span>` : '<span class="due-soon"><i class="bi bi-person-exclamation"></i>Sin responsable</span>';
     const antes = t.diasAntesEvento != null && !o.conEvento ? `<span title="Respecto del inicio del evento"><i class="bi bi-flag"></i>${t.diasAntesEvento > 0 ? `${t.diasAntesEvento} días antes` : t.diasAntesEvento < 0 ? `${-t.diasAntesEvento} días después` : 'el día del evento'}</span>` : '';
     return `<div class="task ${done ? 'done' : ''}">
       <input class="form-check-input" type="checkbox" ${done ? 'checked' : ''} ${t.puedeActualizar ? '' : 'disabled'} data-act="tarea-check" data-id="${esc(t.id)}" title="${done ? 'Marcar como pendiente' : 'Marcar como completada'}">
@@ -1350,6 +1410,136 @@
     } catch (err) { errorEn(el, err); }
   }
 
+  /* ------------------------------ PERFILES Y WHATSAPP ------------------------------ */
+  // Mismo criterio que el servidor: 11 2345-6789 → 5491123456789.
+  function waNumero(tel) {
+    let d = String(tel || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.startsWith('00')) d = d.slice(2);
+    if (d.startsWith('54') && d.length >= 12) { d = d.slice(2); if (d[0] === '9') d = d.slice(1); }
+    else if (d[0] === '0') d = d.slice(1);
+    else if (d.length > 12) return d;
+    if (d.length === 12) { for (let a = 2; a <= 4; a++) { if (d.substr(a, 2) === '15') { d = d.slice(0, a) + d.slice(a + 2); break; } } }
+    return d.length === 10 ? '549' + d : d;
+  }
+  function waLink(wa, texto) { return wa ? 'https://wa.me/' + wa + (texto ? '?text=' + encodeURIComponent(texto) : '') : ''; }
+  function waBtn(wa, nombre) {
+    if (!wa) return '';
+    const saludo = `¡Hola ${String(nombre || '').split(' ')[0]}! Te escribo del Centro Cristiano Amanecer.`;
+    return `<a class="btn btn-sm btn-link text-success p-0 ms-1" href="${esc(waLink(wa, saludo))}" target="_blank" rel="noopener" title="Escribir por WhatsApp"><i class="bi bi-whatsapp"></i></a>`;
+  }
+  function waDe(email) { const p = ((S.boot && S.boot.directorio) || []).find(x => x.email === email); return p ? p.wa : ''; }
+
+  async function abrirPerfil(email) {
+    showLoader(true);
+    try {
+      llenarPerfil(await api('perfil', { email: email || S.boot.user.email }));
+      bootstrap.Modal.getOrCreateInstance('#modal-perfil').show();
+    } catch (err) { toast(err.message, 'danger'); }
+    showLoader(false);
+  }
+  function llenarPerfil(p) {
+    const propio = p.email === S.boot.user.email, o = p.opciones;
+    $('#p-titulo').textContent = propio ? 'Mi perfil' : 'Perfil de ' + (p.nombre || p.email);
+    $('#p-email').value = p.email;
+    $('#p-email-ver').value = p.email;
+    $('#p-nombre').value = p.nombre || '';
+    $('#p-telefono').value = p.telefono || '';
+    $('#p-whatsapp').checked = p.whatsapp !== false;
+    $('#p-habilidades').innerHTML = o.habilidades.map((h, i) => `<div class="col-6 col-md-4"><div class="form-check">
+      <input class="form-check-input" type="checkbox" id="p-hab-${i}" value="${esc(h)}" ${p.habilidades.includes(h) ? 'checked' : ''}><label class="form-check-label small" for="p-hab-${i}">${esc(h)}</label></div></div>`).join('');
+    const toggles = (items, pref) => items.map((x, i) => `<input type="checkbox" class="btn-check" id="${pref}-${i}" value="${esc(x)}" ${p.disponibilidad.includes(x) ? 'checked' : ''}><label class="btn btn-sm btn-outline-primary" for="${pref}-${i}">${esc(x)}</label>`).join('');
+    $('#p-dias').innerHTML = toggles(o.dias, 'p-dia');
+    $('#p-franjas').innerHTML = toggles(o.franjas, 'p-franja');
+    $('#p-vehiculo').checked = !!p.vehiculo;
+    $('#p-nacimiento').value = p.fechaNacimiento || '';
+    $('#p-direccion').value = p.direccion || '';
+    $('#p-localidad').value = p.localidad || '';
+    $('#p-emergencia').value = p.contactoEmergencia || '';
+    $('#p-tel-emergencia').value = p.telefonoEmergencia || '';
+    $('#p-salud').value = p.salud || '';
+    $('#p-notas').value = p.notas || '';
+    ayudaWa();
+  }
+  function ayudaWa() {
+    const wa = waNumero($('#p-telefono').value);
+    $('#p-wa-ayuda').innerHTML = wa ? `Se usará <b>+${esc(wa)}</b> · <a href="${esc(waLink(wa))}" target="_blank" rel="noopener">probar en WhatsApp</a>`
+      : 'Con característica (ej.: 11, 351). Si ponés 0 o 15, los quitamos solos.';
+  }
+  async function guardarPerfil(e) {
+    e.preventDefault();
+    const marcados = sel => $$(sel + ' input:checked').map(i => i.value);
+    const payload = {
+      email: $('#p-email').value, nombre: $('#p-nombre').value.trim(), telefono: $('#p-telefono').value.trim(), whatsapp: $('#p-whatsapp').checked,
+      habilidades: marcados('#p-habilidades'), disponibilidad: marcados('#p-dias').concat(marcados('#p-franjas')), vehiculo: $('#p-vehiculo').checked,
+      fechaNacimiento: $('#p-nacimiento').value, direccion: $('#p-direccion').value.trim(), localidad: $('#p-localidad').value.trim(),
+      contactoEmergencia: $('#p-emergencia').value.trim(), telefonoEmergencia: $('#p-tel-emergencia').value.trim(),
+      salud: $('#p-salud').value.trim(), notas: $('#p-notas').value.trim()
+    };
+    if (!payload.nombre) return toast('Ingresá el nombre y apellido.', 'warning');
+    const btn = $('#p-guardar');
+    busy(btn, true, 'Guardando…');
+    try {
+      await api('guardarPerfil', payload);
+      bootstrap.Modal.getInstance('#modal-perfil').hide();
+      toast('Perfil guardado. ¡Gracias!');
+      S.boot = await api('bootstrap');
+      $('#u-nombre').textContent = S.boot.user.nombre;
+      $('#u-avatar').textContent = initials(S.boot.user.nombre);
+      llenarSelectsFijos();
+      if (S.view === 'inicio' || S.view === 'equipos') LOADERS[S.view]();
+    } catch (err) { toast(err.message, 'danger'); }
+    busy(btn, false);
+  }
+
+  async function verPerfil(email) {
+    const cont = $('#detalle-content');
+    cont.innerHTML = '<div class="p-5 text-center"><div class="spinner-border text-primary"></div></div>';
+    bootstrap.Modal.getOrCreateInstance('#modal-detalle').show();
+    try {
+      const p = await api('perfil', { email });
+      const fila = (lbl, val) => val ? `<div class="info-item"><div class="lbl">${lbl}</div>${val}</div>` : '';
+      const badges = arr => arr.map(x => `<span class="badge rounded-pill text-bg-light border me-1 mb-1 fw-normal">${esc(x)}</span>`).join('');
+      cont.innerHTML = `
+        <div class="detail-hero d-flex justify-content-between align-items-start gap-2">
+          <div class="d-flex gap-3 align-items-center min-w-0">
+            <span class="avatar" style="width:52px;height:52px;flex-basis:52px;font-size:1.1rem">${esc(initials(p.nombre || p.email))}</span>
+            <div class="min-w-0"><h4 class="fw-bold mb-1 text-truncate">${esc(p.nombre || p.email)}</h4>
+              <div class="small opacity-75 text-truncate">${esc(p.email)}</div>
+              <div class="mt-1">${p.cargos.map(c => `<span class="badge rounded-pill text-bg-warning me-1">${esc(c)}</span>`).join('')}</div></div>
+          </div>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-flex flex-wrap gap-2 mb-4">
+            ${p.wa ? `<a class="btn btn-success" href="${esc(waLink(p.wa, `¡Hola ${(p.nombre || '').split(' ')[0]}! Te escribo del Centro Cristiano Amanecer.`))}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>WhatsApp ${esc(p.telefono)}</a>` : '<span class="small text-muted"><i class="bi bi-telephone-x me-1"></i>No compartió su celular.</span>'}
+            <a class="btn btn-outline-primary" href="mailto:${esc(p.email)}"><i class="bi bi-envelope me-1"></i>Correo</a>
+          </div>
+          <div class="info-grid mb-4">
+            ${fila('Áreas y roles', p.asignaciones.length ? p.asignaciones.map(a => `${esc(a.rolLabel)} en ${esc(a.departamento)}`).join('<br>') : '<span class="text-muted">Sin áreas asignadas</span>')}
+            ${fila('Habilidades', p.habilidades.length ? badges(p.habilidades) : '<span class="text-muted small">Sin cargar</span>')}
+            ${fila('Disponibilidad', p.disponibilidad.length ? badges(p.disponibilidad) : '<span class="text-muted small">Sin cargar</span>')}
+            ${fila('Traslados', p.vehiculo ? '<i class="bi bi-car-front me-1"></i>Tiene vehículo' : '<span class="text-muted small">Sin vehículo</span>')}
+          </div>
+          ${p.verSensible ? `<div class="card bg-light"><div class="card-body">
+            <div class="fw-semibold small text-uppercase text-muted mb-3"><i class="bi bi-shield-lock me-1"></i>Datos privados</div>
+            <div class="info-grid">
+              ${fila('Nacimiento', p.fechaNacimiento ? esc(fmtYmd(p.fechaNacimiento)) + ' ' + p.fechaNacimiento.slice(0, 4) : '')}
+              ${fila('Dirección', esc([p.direccion, p.localidad].filter(Boolean).join(', ')))}
+              ${fila('Emergencia', p.contactoEmergencia || p.telefonoEmergencia ? esc(p.contactoEmergencia) + ' ' + esc(p.telefonoEmergencia) + waBtn(p.waEmergencia, p.contactoEmergencia) : '')}
+              ${fila('Salud', esc(p.salud))}
+              ${fila('Otros datos', esc(p.notas))}
+            </div>
+            ${!p.fechaNacimiento && !p.direccion && !p.contactoEmergencia && !p.salud && !p.notas ? '<div class="small text-muted">Todavía no cargó datos privados.</div>' : ''}
+          </div></div>` : ''}
+          ${p.actualizado ? `<div class="small text-muted mt-3">Perfil actualizado el ${fmtCorta(p.actualizado)}</div>` : '<div class="small text-muted mt-3">Esta persona todavía no completó su perfil.</div>'}
+        </div>
+        ${p.puedeEditar ? `<div class="modal-footer"><button class="btn btn-primary" data-act="editar-perfil" data-email="${esc(p.email)}"><i class="bi bi-pencil me-1"></i>Editar perfil</button></div>` : ''}`;
+    } catch (err) {
+      cont.innerHTML = `<div class="modal-header"><h5 class="modal-title">Perfil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-danger mb-0">${esc(err.message)}</div></div>`;
+    }
+  }
+
   /* ------------------------------ AVISOS A EQUIPOS ------------------------------ */
   async function cargarReglas() {
     const box = $('#reglas-box');
@@ -1404,7 +1594,7 @@
       S.detalle = ev;
       const u = S.boot.user;
       const enc = ev.participantes.filter(p => p.rol === 'ENCARGADO'), col = ev.participantes.filter(p => p.rol === 'COLABORADOR');
-      const persona = p => { const st = PART[p.estado] || PART.PENDIENTE; return `<div class="person"><span class="avatar">${esc(initials(p.nombre || p.email))}</span><div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(p.nombre || p.email)}</div>${p.nombre ? `<div class="small text-muted text-truncate">${esc(p.email)}</div>` : ''}</div><span class="badge text-bg-${st[1]}">${st[0]}</span></div>`; };
+      const persona = p => { const st = PART[p.estado] || PART.PENDIENTE; return `<div class="person"><span class="avatar">${esc(initials(p.nombre || p.email))}</span><div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(p.nombre || p.email)}${waBtn(waDe(p.email), p.nombre)}</div>${p.nombre ? `<div class="small text-muted text-truncate">${esc(p.email)}</div>` : ''}</div><span class="badge text-bg-${st[1]}">${st[0]}</span></div>`; };
       const svcs = [['audio', 'speaker', 'Audio'], ['video', 'projector', 'Video / Proyección'], ['grabacion', 'mic', 'Grabación de audio'], ['streaming', 'broadcast', 'Transmisión en vivo'], ['alabanza', 'music-note-beamed', 'Ministerio de Alabanza']];
       const acciones = [];
       if (ev.permisos.revisar) {
@@ -1775,11 +1965,13 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
+      case 'mi-perfil': abrirPerfil(null); break;
+      case 'ver-perfil': verPerfil(el.dataset.email); break;
+      case 'editar-perfil': await cerrarDetalle(); abrirPerfil(el.dataset.email); break;
       case 'nuevo-miembro': abrirMiembro(null); break;
       case 'editar-persona': abrirMiembro(el.dataset.email); break;
       case 'm-add': {
-        const u = S.boot.user;
-        $('#m-asignaciones').insertAdjacentHTML('beforeend', filaAsignacion({ rol: 'COLABORADOR', departamento: u.isAdmin ? S.miembros.departamentos[0] : u.encargadoDe[0] }));
+        $('#m-asignaciones').insertAdjacentHTML('beforeend', filaAsignacion({ rol: 'COLABORADOR', departamento: S.miembros.departamentos[0] }));
         break;
       }
       case 'm-del': el.closest('.asig').remove(); break;
@@ -1817,13 +2009,15 @@
   $('#f-direccion').addEventListener('blur', verMapa);
   $('#form-miembro').addEventListener('submit', guardarMiembro);
   $('#form-tarea').addEventListener('submit', guardarTarea);
+  $('#form-perfil').addEventListener('submit', guardarPerfil);
+  $('#p-telefono').addEventListener('input', ayudaWa);
   $('#t-fecha').addEventListener('change', ayudaFecha);
   $('#m-asignaciones').addEventListener('change', e => {
     if (e.target.dataset.f !== 'rol') return;
     const fila = e.target.closest('.asig'), dep = $('[data-f="dep"]', fila);
-    const pastoral = e.target.value === 'SUPERADMIN' || e.target.value === 'PASTOR';
-    if (pastoral) dep.value = 'Pastores';
-    dep.disabled = pastoral;
+    const fija = S.miembros.areasFijas[e.target.value];
+    if (fija) dep.value = fija;
+    dep.disabled = !!fija;
     e.target.title = AYUDA_ROL[e.target.value] || '';
     $('#m-ayuda').textContent = AYUDA_ROL[e.target.value] || '';
   });
