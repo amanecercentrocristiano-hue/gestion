@@ -1167,7 +1167,7 @@
           ${e.miParticipacion.estado !== 'ACEPTADO' ? `<button class="btn btn-sm btn-success" data-act="aceptar" data-id="${esc(e.id)}"><i class="bi bi-check-lg me-1"></i>Confirmo mi participación</button>` : ''}
           ${e.miParticipacion.estado !== 'RECHAZADO' ? `<button class="btn btn-sm btn-outline-danger" data-act="declinar" data-id="${esc(e.id)}"><i class="bi bi-x-lg me-1"></i>No puedo participar</button>` : ''}
         </div>` : '';
-      const estadoMio = e => { const p = PART[e.miParticipacion.estado] || PART.PENDIENTE; return `<div class="small mt-2">Mi rol: <b>${e.miParticipacion.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}</b> · <span class="badge text-bg-${p[1]}">${p[0]}</span></div>`; };
+      const estadoMio = e => { const p = PART[e.miParticipacion.estado] || PART.PENDIENTE; return `<div class="small mt-2">Mi rol: <b>${esc(rolTexto(e.miParticipacion.rol))}</b>${['PREDICADOR', 'REFLEXION'].includes(e.miParticipacion.rol) ? '' : ` · <span class="badge text-bg-${p[1]}">${p[0]}</span>`}</div>`; };
       el.innerHTML = `
         <div class="mb-3"><h2 class="page-title">Mis asignaciones</h2><div class="text-muted small">Confirmá tu participación para recibir la invitación de Google Calendar y los recordatorios.</div></div>
         <div class="card mb-4"><div class="card-header">Próximas (${prox.length})</div><div class="card-body">
@@ -1599,18 +1599,24 @@
     const el = $('#v-tareas');
     if (!silencioso) cargando(el);
     try {
-      S.misTareas = await api('misTareas');
+      const [tareas, evs] = await Promise.all([api('misTareas'), obtenerEventos(true)]);
+      S.misTareas = tareas;
       const pend = S.misTareas.filter(t => t.estado !== 'COMPLETADA'), hechas = S.misTareas.filter(t => t.estado === 'COMPLETADA');
       const vencidas = pend.filter(t => t.vencida).length;
+      // Predicación y reflexión de Santa Cena asignadas a mí (próximas).
+      const servicios = evs.filter(e => e.miParticipacion && ['PREDICADOR', 'REFLEXION'].includes(e.miParticipacion.rol) && !e.pasado && e.estado !== 'CANCELADO');
       el.innerHTML = `
-        <div class="mb-3"><h2 class="page-title">Mis tareas</h2><div class="text-muted small">Pasos de organización a tu cargo en los distintos proyectos. Marcalos al completarlos para que avance la barra de progreso.</div></div>
+        <div class="mb-3"><h2 class="page-title">Mis tareas</h2><div class="text-muted small">Lo que tenés a cargo: predicaciones, reflexiones de Santa Cena y pasos de organización de los proyectos.</div></div>
+        ${servicios.length ? `<div class="card mb-4"><div class="card-header"><i class="bi bi-mic me-1"></i>Predicación y Santa Cena (${servicios.length})</div><div class="card-body">
+          ${servicios.map(e => eventCard(e, `<div class="small mt-2"><span class="badge text-bg-primary">${e.miParticipacion.rol === 'PREDICADOR' ? '🎤 Te toca predicar' : '🍞 Te toca compartir la reflexión de Santa Cena'}</span></div>`)).join('')}
+        </div></div>` : ''}
         <div class="d-flex flex-wrap gap-2 mb-3">
-          <div class="stat-chip"><b>${pend.length}</b>Por hacer</div>
+          <div class="stat-chip"><b>${pend.length}</b>Pasos por hacer</div>
           <div class="stat-chip"><b class="${vencidas ? 'text-danger' : ''}">${vencidas}</b>Vencidas</div>
           <div class="stat-chip"><b class="text-success">${hechas.length}</b>Completadas</div>
         </div>
-        <div class="card mb-4"><div class="card-header">Por hacer</div><div class="card-body py-1">
-          ${pend.length ? pend.map(t => filaTarea(t, { conEvento: true })).join('') : empty('emoji-smile', 'No tenés tareas pendientes. ¡Bien hecho!')}
+        <div class="card mb-4"><div class="card-header">Pasos de organización por hacer</div><div class="card-body py-1">
+          ${pend.length ? pend.map(t => filaTarea(t, { conEvento: true })).join('') : empty('emoji-smile', 'No tenés pasos de organización pendientes.')}
         </div></div>
         ${hechas.length ? `<div class="card"><div class="card-header">Completadas</div><div class="card-body py-1">${hechas.slice(0, 20).map(t => filaTarea(t, { conEvento: true })).join('')}</div></div>` : ''}`;
     } catch (err) { errorEn(el, err); }
