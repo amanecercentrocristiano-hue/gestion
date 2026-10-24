@@ -156,6 +156,33 @@
     .countdown { background: rgba(255, 255, 255, .15); border-radius: 12px; padding: .5rem .9rem; text-align: center; min-width: 92px; }
     .countdown b { font-size: 1.6rem; display: block; line-height: 1; }
 
+    /* Calendario mensual */
+    .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+    .cal-head { text-align: center; font-size: .72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; padding: 4px 0; }
+    .cal-day { background: #fff; border-radius: 10px; min-height: 104px; padding: 6px; border: 1px solid #ECECF4; overflow: hidden; cursor: pointer; }
+    .cal-day.otro { background: #F7F7FB; opacity: .55; }
+    .cal-day.hoy { border-color: var(--cca); box-shadow: inset 0 0 0 1px var(--cca); }
+    .cal-day.sel { background: var(--cca-soft); }
+    .cal-num { font-size: .8rem; font-weight: 700; margin-bottom: 3px; }
+    .cal-ev { display: block; font-size: .72rem; line-height: 1.25; padding: 2px 5px; border-radius: 6px; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: var(--cca-soft); color: var(--cca); border-left: 3px solid var(--cca); }
+    .cal-ev.st-PENDIENTE { background: #FFF4D6; color: #7a5200; border-color: #F0AD00; }
+    .cal-ev.st-APROBADO { background: #E2F6EA; color: #0f5132; border-color: #198754; }
+    .cal-ev.st-RECHAZADO, .cal-ev.st-CANCELADO { background: #f1f1f4; color: #777; border-color: #aaa; text-decoration: line-through; }
+    .cal-mas { font-size: .7rem; color: var(--muted); }
+    @media (max-width: 767.98px) {
+      .cal-day { min-height: 58px; padding: 3px; }
+      .cal-ev { font-size: 0; padding: 0; height: 6px; border-left-width: 0; }
+      .cal-mas { display: none; }
+    }
+    /* Impresión de listas */
+    #imprimible { display: none; }
+    @media print {
+      body > *:not(#imprimible) { display: none !important; }
+      #imprimible { display: block !important; font-size: 11px; }
+      #imprimible table { width: 100%; border-collapse: collapse; }
+      #imprimible th, #imprimible td { border: 1px solid #999; padding: 4px 6px; text-align: left; vertical-align: top; }
+    }
+
     .table-log td, .table-log th { font-size: .85rem; vertical-align: top; }
     .toast-container { z-index: 4000; }
     .min-w-0 { min-width: 0; }
@@ -204,6 +231,14 @@
     </div>
   </section>
 
+  <!-- ======================= INSCRIPCIÓN PÚBLICA (sin cuenta) ======================= -->
+  <section id="publico" class="login-wrap d-none">
+    <div class="card login-card shadow-lg" style="max-width:560px">
+      <div class="login-head py-3"><div class="brand-logo" style="width:110px;height:110px" role="img" aria-label="Centro Cristiano Amanecer"></div></div>
+      <div class="card-body p-4" id="publico-body"></div>
+    </div>
+  </section>
+
   <!-- =============================== APP =============================== -->
   <div id="app" class="d-none">
     <header class="app-header">
@@ -236,7 +271,13 @@
       <section id="v-eventos" class="view d-none">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <h2 class="page-title">Agenda de eventos</h2>
-          <button class="btn btn-sun need-create" data-act="nuevo"><i class="bi bi-plus-lg me-1"></i>Nuevo evento</button>
+          <div class="d-flex gap-2">
+            <div class="btn-group" role="group" aria-label="Vista">
+              <button type="button" class="btn btn-outline-primary active" data-act="modo-agenda" data-modo="lista"><i class="bi bi-list-ul me-1"></i>Lista</button>
+              <button type="button" class="btn btn-outline-primary" data-act="modo-agenda" data-modo="calendario"><i class="bi bi-calendar3 me-1"></i>Calendario</button>
+            </div>
+            <button class="btn btn-sun need-create" data-act="nuevo"><i class="bi bi-plus-lg me-1"></i>Nuevo evento</button>
+          </div>
         </div>
         <div class="card mb-3"><div class="card-body py-3">
           <div class="row g-2 align-items-center">
@@ -256,6 +297,8 @@
       <section id="v-asignaciones" class="view d-none"></section>
       <section id="v-tareas" class="view d-none"></section>
       <section id="v-whatsapp" class="view d-none"></section>
+      <section id="v-areas" class="view d-none"></section>
+      <section id="v-inscripciones" class="view d-none"></section>
       <section id="v-proyecto" class="view d-none"></section>
       <section id="v-equipos" class="view d-none"></section>
       <section id="v-bitacora" class="view d-none"></section>
@@ -337,6 +380,21 @@
           </div>
 
           <div class="form-section">
+            <div class="form-section-title"><i class="bi bi-ticket-perforated me-1"></i> Inscripciones</div>
+            <div class="form-check form-switch mb-3">
+              <input class="form-check-input" type="checkbox" id="f-inscripcion">
+              <label class="form-check-label fw-semibold" for="f-inscripcion">Este evento tiene inscripción (retiro, campamento, convención…)</label>
+            </div>
+            <div class="row g-3 mb-3 d-none" id="wrap-inscripcion">
+              <div class="col-6 col-md-3"><label class="form-label">Cupo</label><input type="number" min="0" step="1" class="form-control" id="f-cupo" placeholder="0 = sin límite"></div>
+              <div class="col-6 col-md-4"><label class="form-label">Costo por persona</label><div class="input-group"><span class="input-group-text">$</span><input type="number" min="0" step="0.01" class="form-control" id="f-costo-insc" placeholder="0 = gratis"></div></div>
+              <div class="col-md-5"><label class="form-label">Cierre de inscripción</label><input type="date" class="form-control" id="f-cierre-insc"></div>
+              <div class="col-12"><label class="form-label">Información para los inscriptos</label><textarea class="form-control" id="f-info-insc" rows="2" maxlength="1500" placeholder="Qué traer, horario de salida, datos para transferir…"></textarea></div>
+              <div class="col-12 small text-muted"><i class="bi bi-link-45deg me-1"></i>Cuando el evento esté aprobado, vas a tener un enlace para que la gente se anote sola, sin necesidad de cuenta.</div>
+            </div>
+          </div>
+
+          <div class="form-section">
             <div class="form-section-title"><i class="bi bi-people me-1"></i> Encargados y colaboradores de esta actividad</div>
             <div class="small text-muted mb-2"><i class="bi bi-search me-1"></i>Buscá entre las personas ya cargadas en el sistema, o elegí <b>«Agregar persona nueva»</b> para cargar nombre y correo.</div>
             <div class="mb-3"><label class="form-label">Encargados</label><div id="chips-encargados"></div></div>
@@ -395,6 +453,49 @@
           </div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="t-guardar"><i class="bi bi-save me-1"></i>Guardar paso</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: ÁREA ======================= -->
+  <div class="modal fade" id="modal-area" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="form-area" novalidate>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="a-titulo">Nueva área</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="a-original">
+          <div class="alert alert-info small d-none" id="a-protegida"><i class="bi bi-lock me-1"></i>El sistema usa esta área por su nombre: podés cambiar el tipo y la descripción.</div>
+          <div class="mb-3"><label class="form-label">Nombre *</label><input class="form-control" id="a-nombre" maxlength="80" placeholder="Ej.: Servicio de Recepción y Bienvenida"></div>
+          <div class="mb-3"><label class="form-label">Tipo</label><select class="form-select" id="a-tipo"></select></div>
+          <div class="mb-3"><label class="form-label">Descripción</label><textarea class="form-control" id="a-descripcion" rows="2" maxlength="300" placeholder="¿Qué hace esta área?"></textarea></div>
+          <div class="form-check form-switch" id="a-activo-wrap"><input class="form-check-input" type="checkbox" id="a-activo" checked><label class="form-check-label" for="a-activo">Área activa (aparece al crear eventos y asignar personas)</label></div>
+          <div class="form-text" id="a-ayuda-renombrar"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="a-guardar">Guardar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: INSCRIPTO ======================= -->
+  <div class="modal fade" id="modal-inscripto" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+      <form class="modal-content" id="form-inscripto" novalidate>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="i-titulo">Nueva inscripción</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="i-id">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Nombre y apellido *</label><input class="form-control" id="i-nombre" maxlength="100"></div>
+            <div class="col-md-6"><label class="form-label">Celular (WhatsApp)</label><input type="tel" class="form-control" id="i-telefono" maxlength="30"></div>
+            <div class="col-md-6"><label class="form-label">Correo</label><input type="email" class="form-control" id="i-email"></div>
+            <div class="col-md-2"><label class="form-label">Edad</label><input type="number" min="0" max="120" class="form-control" id="i-edad"></div>
+            <div class="col-md-4"><label class="form-label">Estado</label><select class="form-select" id="i-estado"></select></div>
+            <div class="col-12"><label class="form-label">Observaciones (salud, alergias, comidas…)</label><textarea class="form-control" id="i-observaciones" rows="2" maxlength="1000"></textarea></div>
+            <div class="col-md-4"><label class="form-label">Monto pagado</label><div class="input-group"><span class="input-group-text">$</span><input type="number" min="0" step="0.01" class="form-control" id="i-monto"></div><div class="form-text" id="i-monto-ayuda"></div></div>
+            <div class="col-md-4"><label class="form-label">Forma de pago</label><select class="form-select" id="i-forma"></select></div>
+            <div class="col-md-4"><label class="form-label">Notas internas</label><input class="form-control" id="i-notas" maxlength="1000"></div>
+          </div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="i-guardar"><i class="bi bi-save me-1"></i>Guardar</button></div>
       </form>
     </div>
   </div>
@@ -483,6 +584,7 @@
   </div>
 
   <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toasts"></div>
+  <div id="imprimible"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
@@ -496,6 +598,7 @@
   const idSeguro = v => /^[A-Za-z0-9\-]*$/.test(v || '') ? (v || '') : '';
   const EVENTO_INICIAL = idSeguro('<?= eventoInicial ?>') || idSeguro(QS.get('evento'));
   const PROYECTO_INICIAL = idSeguro('<?= proyectoInicial ?>') || idSeguro(QS.get('proyecto'));
+  const INSCRIPCION_INICIAL = idSeguro('<?= inscripcionInicial ?>') || idSeguro(QS.get('inscripcion'));
   const S = { token: null, boot: null, eventos: null, view: 'inicio', miembros: null, chips: {} };
   const $ = (s, el) => (el || document).querySelector(s);
   const $$ = (s, el) => Array.from((el || document).querySelectorAll(s));
@@ -522,6 +625,8 @@
     TESORERIA_VISTO_BUENO: 'Visto bueno Tesorería', TESORERIA_OBSERVA: 'Tesorería observó', RECORDATORIO: 'Recordatorio enviado',
     ASIGNAR_MIEMBRO: 'Asignó miembro', ACTUALIZAR_MIEMBRO: 'Actualizó miembro', QUITAR_MIEMBRO: 'Quitó miembro',
     CONFIGURACION: 'Configuración', AVISO_EQUIPO: 'Aviso a equipo', PERFIL: 'Perfil',
+    AREA_CREAR: 'Creó área', AREA_EDITAR: 'Editó área', INSCRIPCION_CREAR: 'Nueva inscripción',
+    INSCRIPCION_EDITAR: 'Editó inscripción', INSCRIPCION_BORRAR: 'Borró inscripción',
     TAREA_CREAR: 'Agregó paso', TAREA_EDITAR: 'Actualizó paso', TAREA_COMPLETAR: 'Completó paso', TAREA_BORRAR: 'Borró paso',
     PLANTILLA: 'Cargó pasos sugeridos', PLAN_COMPLETO: 'Plan completo', RECORDATORIO_TAREA: 'Recordatorio de plazo', SETUP: 'Instalación', ERROR_CORREO: 'Error de correo', CORREO_SIN_CUOTA: 'Sin cuota de correo'
   };
@@ -693,6 +798,7 @@
   /* ------------------------------ arranque ------------------------------ */
   async function init() {
     showLoader(true);
+    if (INSCRIPCION_INICIAL) return mostrarInscripcionPublica(INSCRIPCION_INICIAL); // formulario público, sin cuenta
     const t = store.get('cca_token');
     if (t) {
       S.token = t;
@@ -720,6 +826,7 @@
     aplicarLogo();
     construirNav();
     llenarSelectsFijos();
+    S.modoAgenda = store.get('cca_modo_agenda') || 'lista';
     $$('.need-create').forEach(b => b.classList.toggle('d-none', !u.canCreate));
     showLoader(false);
     if (PROYECTO_INICIAL) abrirProyecto(PROYECTO_INICIAL);
@@ -743,6 +850,7 @@
       ['asignaciones', 'person-check', 'Mis asignaciones', true, c.asignaciones],
       ['tareas', 'list-check', 'Mis tareas', true, c.tareas],
       ['whatsapp', 'whatsapp', 'Avisos WhatsApp', u.organiza],
+      ['areas', 'diagram-3', 'Áreas', u.canAreas],
       ['aprobaciones', 'patch-check', 'Aprobaciones', u.isSuper, c.aprobaciones],
       ['tesoreria', 'cash-coin', 'Tesorería', u.isTesoreria, c.tesoreria],
       ['equipos', 'people', 'Equipos', u.canManageTeams],
@@ -770,11 +878,13 @@
   const LOADERS = {
     inicio: cargarInicio, eventos: cargarEventos, aprobaciones: cargarAprobaciones, tesoreria: cargarTesoreria,
     asignaciones: cargarAsignaciones, equipos: cargarEquipos, bitacora: cargarBitacora, config: cargarConfig,
-    tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa
+    tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa,
+    areas: cargarAreas, inscripciones: () => cargarInscripciones(S.inscEventoId)
   };
   function go(view) {
-    if (view !== 'proyecto' && S.view !== 'proyecto') S.vistaPrevia = view;
-    else if (view === 'proyecto' && S.view !== 'proyecto') S.vistaPrevia = S.view;
+    const sub = v => v === 'proyecto' || v === 'inscripciones'; // pantallas que se abren desde un evento
+    if (!sub(view) && !sub(S.view)) S.vistaPrevia = view;
+    else if (sub(view) && !sub(S.view)) S.vistaPrevia = S.view;
     S.view = view;
     $$('.view').forEach(v => v.classList.toggle('d-none', v.id !== 'v-' + view));
     $$('#main-nav .nav-link').forEach(a => a.classList.toggle('active', a.dataset.view === view));
@@ -893,7 +1003,10 @@
     if (!S.eventos) return;
     const u = S.boot.user;
     const q = $('#fe-q').value.trim().toLowerCase();
-    const dep = $('#fe-dep').value, est = $('#fe-estado').value, cuando = $('#fe-cuando').value, mios = $('#fe-mios').checked;
+    const cal = S.modoAgenda === 'calendario';
+    const dep = $('#fe-dep').value, est = $('#fe-estado').value, cuando = cal ? 'todos' : $('#fe-cuando').value, mios = $('#fe-mios').checked;
+    $('#fe-cuando').closest('div').classList.toggle('d-none', cal);
+    $$('[data-act="modo-agenda"]').forEach(b => b.classList.toggle('active', b.dataset.modo === (cal ? 'calendario' : 'lista')));
     let evs = S.eventos.filter(ev =>
       (!dep || ev.departamento === dep) &&
       (!est || ev.estado === est) &&
@@ -901,6 +1014,7 @@
       (!mios || ev.miParticipacion || u.encargadoDe.includes(ev.departamento) || ev.creadoPor === u.email) &&
       (!q || [ev.titulo, ev.departamento, ev.tipo, ev.tipoDetalle, ev.ubicacionTexto, ev.descripcion].join(' ').toLowerCase().includes(q))
     );
+    if (cal) { $('#lista-eventos').innerHTML = renderCalendario(evs); return; }
     if (cuando === 'pasados') evs = evs.slice().reverse();
     $('#lista-eventos').innerHTML = evs.length ? listaAgrupada(evs) : empty('calendar-x', 'No hay eventos con esos filtros.');
   }
@@ -1028,7 +1142,8 @@
       el.innerHTML = `
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : u.isSecretaria ? 'Asigná encargados y colaboradores de cualquier área.' : 'Asigná colaboradores a tus áreas por correo electrónico.'} Tocá un nombre para ver su perfil.</div></div>
-          <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Agregar persona</button>
+          <div class="d-flex gap-2"><button class="btn btn-outline-secondary" data-act="eq-csv" title="Descargar para Excel"><i class="bi bi-filetype-csv me-1"></i>Excel</button>
+          <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Agregar persona</button></div>
         </div>
         <div class="row g-2 mb-3"><div class="col-md-3"><input class="form-control" id="eq-q" placeholder="Buscar persona…"></div>
         <div class="col-6 col-md-3"><select class="form-select" id="eq-dep"><option value="">Todas las áreas</option>${d.departamentos.map(x => `<option>${esc(x)}</option>`).join('')}</select></div>
@@ -1637,6 +1752,334 @@
     }
   }
 
+  /* ------------------------------ EXPORTAR E IMPRIMIR ------------------------------ */
+  function descargarCsv(nombre, filas) {
+    const celda = v => { const s = String(v == null ? '' : v); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const csv = '﻿' + filas.map(f => f.map(celda).join(';')).join('\r\n'); // ; y BOM: se abre bien en Excel en español
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = nombre.replace(/[^\w\-áéíóúñ ]/gi, '').trim().replace(/\s+/g, '_') + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
+  function imprimirTabla(titulo, subtitulo, filas) {
+    $('#imprimible').innerHTML = `<h2 style="margin:0">${esc(titulo)}</h2><div style="margin:4px 0 10px;color:#555">${esc(subtitulo)}</div>
+      <table><thead><tr>${filas[0].map(h => `<th>${esc(h)}</th>`).join('')}</tr></thead>
+      <tbody>${filas.slice(1).map(f => `<tr>${f.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>
+      <div style="margin-top:8px;color:#777">Centro Cristiano Amanecer · ${new Date().toLocaleDateString('es-AR')}</div>`;
+    window.print();
+  }
+  function exportarEquipos() {
+    const d = S.miembros;
+    const filas = [['Nombre', 'Correo', 'Rol', 'Área', 'Cargos', 'WhatsApp', 'Habilidades', 'Vehículo']];
+    d.miembros.slice().sort((a, b) => a.departamento.localeCompare(b.departamento) || a.nombre.localeCompare(b.nombre)).forEach(m => {
+      const p = d.perfiles[m.email] || { wa: '', habilidades: [], vehiculo: false };
+      filas.push([m.nombre, m.email, d.rolLabels[m.rol], m.departamento, m.cargos.map(k => d.cargos[k]).join(', '), p.wa ? '+' + p.wa : '', p.habilidades.join(', '), p.vehiculo ? 'Sí' : '']);
+    });
+    descargarCsv('Equipos CCA', filas);
+  }
+
+  /* ------------------------------ ÁREAS ------------------------------ */
+  async function cargarAreas() {
+    const el = $('#v-areas');
+    cargando(el);
+    try {
+      S.areas = await api('areas');
+      const porTipo = {};
+      S.areas.areas.forEach(a => { (porTipo[a.tipo] = porTipo[a.tipo] || []).push(a); });
+      el.innerHTML = `
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div><h2 class="page-title">Áreas de la iglesia</h2><div class="text-muted small">Ministerios, servicios y departamentos. Las áreas desactivadas no aparecen al crear eventos ni al asignar personas, pero se conserva su historial.</div></div>
+          <button class="btn btn-primary" data-act="area-nueva"><i class="bi bi-plus-lg me-1"></i>Nueva área</button>
+        </div>
+        ${S.areas.tipos.filter(t => porTipo[t]).map(t => `
+          <div class="card mb-3"><div class="card-header">${esc({ Servicio: 'Servicios', Ministerio: 'Ministerios', Departamento: 'Departamentos', Pastoral: 'Pastoral' }[t] || t)}</div><div class="card-body py-1">
+          ${porTipo[t].map(a => `<div class="person ${a.activo ? '' : 'opacity-50'}">
+            <span class="avatar"><i class="bi bi-${t === 'Servicio' ? 'tools' : t === 'Ministerio' ? 'heart' : t === 'Pastoral' ? 'star' : 'building'}"></i></span>
+            <div class="flex-grow-1 min-w-0"><div class="fw-semibold small text-truncate">${esc(a.nombre)} ${a.protegida ? '<i class="bi bi-lock text-muted" title="La usa el sistema"></i>' : ''} ${a.activo ? '' : '<span class="badge text-bg-secondary">Inactiva</span>'}</div>
+              <div class="small text-muted text-truncate">${a.descripcion ? esc(a.descripcion) + ' · ' : ''}${a.personas} persona(s) · ${a.eventos} evento(s)</div></div>
+            <button class="btn btn-sm btn-light" data-act="area-editar" data-nombre="${esc(a.nombre)}"><i class="bi bi-pencil"></i></button>
+          </div>`).join('')}
+          </div></div>`).join('')}`;
+    } catch (err) { errorEn(el, err); }
+  }
+  function abrirArea(nombre) {
+    const a = nombre ? S.areas.areas.find(x => x.nombre === nombre) : null;
+    $('#a-titulo').textContent = a ? 'Editar área' : 'Nueva área';
+    $('#a-original').value = a ? a.nombre : '';
+    $('#a-nombre').value = a ? a.nombre : '';
+    $('#a-nombre').disabled = !!(a && a.protegida);
+    $('#a-tipo').innerHTML = S.areas.tipos.map(t => `<option ${a ? (t === a.tipo ? 'selected' : '') : (t === 'Servicio' ? 'selected' : '')}>${esc(t)}</option>`).join('');
+    $('#a-descripcion').value = a ? a.descripcion : '';
+    $('#a-activo').checked = a ? a.activo : true;
+    $('#a-activo-wrap').classList.toggle('d-none', !a || a.protegida);
+    $('#a-protegida').classList.toggle('d-none', !(a && a.protegida));
+    $('#a-ayuda-renombrar').textContent = a && !a.protegida && (a.personas || a.eventos) ? 'Si cambiás el nombre, se actualiza en sus personas, eventos y avisos.' : '';
+    bootstrap.Modal.getOrCreateInstance('#modal-area').show();
+  }
+  async function guardarArea(e) {
+    e.preventDefault();
+    const payload = { original: $('#a-original').value, nombre: $('#a-nombre').value.trim(), tipo: $('#a-tipo').value, descripcion: $('#a-descripcion').value.trim(), activo: $('#a-activo').checked };
+    if (payload.nombre.length < 3) return toast('Escribí el nombre del área.', 'warning');
+    const btn = $('#a-guardar');
+    busy(btn, true, 'Guardando…');
+    try {
+      await api('guardarArea', payload);
+      bootstrap.Modal.getInstance('#modal-area').hide();
+      toast(payload.original ? 'Área actualizada.' : 'Área creada. Ya podés asignarle personas y eventos.');
+      S.boot = await api('bootstrap');
+      llenarSelectsFijos();
+      cargarAreas();
+    } catch (err) { toast(err.message, 'danger'); }
+    busy(btn, false);
+  }
+
+  /* ------------------------------ INSCRIPCIONES ------------------------------ */
+  const EST_INSC = { CONFIRMADA: ['Confirmada', 'success'], ESPERA: ['Lista de espera', 'warning'], CANCELADA: ['Cancelada', 'secondary'] };
+  function estadoPago(i, costo) {
+    if (!costo) return i.montoPagado ? ['Pagó ' + fmtMonto(i.montoPagado), 'success'] : ['Gratis', 'light'];
+    if (i.montoPagado >= costo) return ['Pagado', 'success'];
+    if (i.montoPagado > 0) return ['Parcial ' + fmtMonto(i.montoPagado), 'warning'];
+    return ['Debe ' + fmtMonto(costo), 'danger'];
+  }
+  function abrirInscripciones(id) {
+    S.inscEventoId = id;
+    $$('.modal.show').forEach(m => bootstrap.Modal.getInstance(m) && bootstrap.Modal.getInstance(m).hide());
+    go('inscripciones');
+  }
+  async function cargarInscripciones(id, silencioso) {
+    const el = $('#v-inscripciones');
+    if (!silencioso) cargando(el);
+    try { S.insc = await api('inscripciones', { eventoId: id }); renderInscripciones(); } catch (err) { errorEn(el, err); }
+  }
+  function renderInscripciones() {
+    const d = S.insc, ev = d.evento, cfg = ev.inscripcion || { cupo: 0, costo: 0 };
+    const q = (S.inscQ || '').toLowerCase(), filtro = S.inscFiltro || '';
+    const activas = d.inscripciones.filter(i => i.estado !== 'CANCELADA');
+    const conf = d.inscripciones.filter(i => i.estado === 'CONFIRMADA').length;
+    const espera = d.inscripciones.filter(i => i.estado === 'ESPERA').length;
+    const recaudado = activas.reduce((s, i) => s + i.montoPagado, 0);
+    const esperado = cfg.costo * activas.length;
+    const deben = cfg.costo ? activas.filter(i => i.montoPagado < cfg.costo).length : 0;
+    const lista = d.inscripciones.filter(i => (!q || [i.nombre, i.email, i.telefono, i.observaciones].join(' ').toLowerCase().includes(q)) &&
+      (!filtro || (filtro === 'DEBE' ? cfg.costo && i.estado !== 'CANCELADA' && i.montoPagado < cfg.costo : i.estado === filtro)));
+    $('#v-inscripciones').innerHTML = `
+      <button class="btn btn-link px-0 mb-2" data-act="volver"><i class="bi bi-arrow-left me-1"></i>Volver</button>
+      <div class="card overflow-hidden mb-4">
+        <div class="detail-hero">
+          <div class="small opacity-75">Inscripciones · ${esc(ev.departamento)}</div>
+          <h3 class="fw-bold mb-1">${esc(ev.titulo)}</h3>
+          <div class="small opacity-75">${esc(fmtFecha(ev.inicio))} · ${esc(fmtRango(ev))} · ${esc(ev.ubicacionTexto)}</div>
+        </div>
+        <div class="card-body">
+          ${cfg.cupo ? `<div class="d-flex justify-content-between small mb-1"><span>Cupo</span><b>${conf} / ${cfg.cupo}</b></div>${barra(Math.round(conf * 100 / cfg.cupo), true)}` : ''}
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <div class="stat-chip"><b class="text-success">${conf}</b>Confirmados</div>
+            ${espera ? `<div class="stat-chip"><b class="text-warning">${espera}</b>En espera</div>` : ''}
+            ${cfg.costo ? `<div class="stat-chip"><b>${fmtMonto(recaudado)}</b>Recaudado de ${fmtMonto(esperado)}</div><div class="stat-chip"><b class="${deben ? 'text-danger' : ''}">${deben}</b>Con pago pendiente</div>` : '<div class="stat-chip"><b>Gratis</b>Sin costo</div>'}
+          </div>
+          <div class="mt-3 p-2 rounded bg-light small d-flex flex-wrap align-items-center gap-2">
+            <i class="bi bi-link-45deg"></i>
+            ${d.abierta.abierta ? `<span>Enlace para que se anoten solos:</span> <code class="text-break">${esc(d.enlace)}</code>
+              <button class="btn btn-sm btn-outline-primary" data-act="insc-copiar"><i class="bi bi-clipboard me-1"></i>Copiar</button>
+              <a class="btn btn-sm btn-outline-success" target="_blank" rel="noopener" href="#" id="insc-compartir"><i class="bi bi-whatsapp me-1"></i>Compartir</a>`
+              : `<span class="text-muted">Formulario público cerrado: ${esc(d.abierta.motivo)}</span>`}
+          </div>
+        </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+        <input class="form-control" style="max-width:240px" id="in-q" placeholder="Buscar inscripto…" value="${esc(S.inscQ || '')}">
+        <select class="form-select" style="max-width:200px" id="in-filtro">
+          ${[['', 'Todos'], ['CONFIRMADA', 'Confirmados'], ['ESPERA', 'Lista de espera'], ['CANCELADA', 'Cancelados']].concat(cfg.costo ? [['DEBE', 'Con pago pendiente']] : []).map(([v, t]) => `<option value="${v}" ${filtro === v ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+        <div class="ms-auto d-flex flex-wrap gap-2">
+          <button class="btn btn-outline-secondary" data-act="insc-csv"><i class="bi bi-filetype-csv me-1"></i>Excel</button>
+          <button class="btn btn-outline-secondary" data-act="insc-imprimir"><i class="bi bi-printer me-1"></i>Imprimir</button>
+          <button class="btn btn-primary" data-act="insc-nueva"><i class="bi bi-person-plus me-1"></i>Agregar</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-body py-1">
+        ${lista.length ? lista.map((i, n) => {
+          const est = EST_INSC[i.estado] || EST_INSC.CONFIRMADA, pago = estadoPago(i, cfg.costo);
+          return `<div class="person">
+            <span class="avatar">${n + 1}</span>
+            <div class="flex-grow-1 min-w-0">
+              <div class="small fw-semibold text-truncate">${esc(i.nombre)}${i.edad !== '' ? ` <span class="text-muted fw-normal">(${i.edad})</span>` : ''}${waBtn(i.wa, i.nombre)}</div>
+              <div class="small text-muted text-truncate">${esc([i.telefono, i.email].filter(Boolean).join(' · ') || 'Sin contacto')}${i.observaciones ? ' · <i class="bi bi-heart-pulse text-danger"></i> ' + esc(i.observaciones) : ''}</div>
+              <div class="d-flex flex-wrap gap-1 mt-1">
+                <span class="badge text-bg-${est[1]}">${est[0]}</span>
+                <span class="badge text-bg-${pago[1]} ${pago[1] === 'light' ? 'border' : ''}">${esc(pago[0])}</span>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-light" data-act="insc-editar" data-id="${esc(i.id)}"><i class="bi bi-pencil"></i></button>
+          </div>`;
+        }).join('') : empty('ticket-perforated', d.inscripciones.length ? 'Nadie coincide con la búsqueda.' : 'Todavía no hay inscriptos. Compartí el enlace o cargalos con «Agregar».')}
+      </div></div>`;
+    $('#in-q').addEventListener('input', e => { S.inscQ = e.target.value; const pos = e.target.selectionStart; renderInscripciones(); const i = $('#in-q'); i.focus(); i.setSelectionRange(pos, pos); });
+    $('#in-filtro').addEventListener('change', e => { S.inscFiltro = e.target.value; renderInscripciones(); });
+    const comp = $('#insc-compartir'); // sin número: WhatsApp deja elegir el chat o grupo
+    if (comp) comp.href = 'https://wa.me/?text=' + encodeURIComponent(`📣 *${ev.titulo}*\n📅 ${fmtFecha(ev.inicio)}, ${fmtHora(ev.inicio)} hs\n📍 ${ev.ubicacionTexto}\n${cfg.costo ? '💲 ' + fmtMonto(cfg.costo) + '\n' : ''}¡Anotate acá! 👉 ${d.enlace}`);
+  }
+  function abrirInscripto(i) {
+    const d = S.insc, cfg = d.evento.inscripcion || { costo: 0 };
+    $('#form-inscripto').reset();
+    $('#i-titulo').textContent = i ? 'Editar inscripción' : 'Nueva inscripción';
+    $('#i-id').value = i ? i.id : '';
+    $('#i-estado').innerHTML = (i ? '' : '<option value="">Automático (según cupo)</option>') + Object.keys(d.estados).map(k => `<option value="${k}">${esc(d.estados[k])}</option>`).join('');
+    $('#i-forma').innerHTML = '<option value="">—</option>' + d.formasPago.map(f => `<option>${esc(f)}</option>`).join('');
+    if (i) {
+      $('#i-nombre').value = i.nombre; $('#i-telefono').value = i.telefono; $('#i-email').value = i.email; $('#i-edad').value = i.edad;
+      $('#i-estado').value = i.estado; $('#i-observaciones').value = i.observaciones; $('#i-monto').value = i.montoPagado || '';
+      $('#i-forma').value = i.formaPago; $('#i-notas').value = i.notas;
+    }
+    $('#i-monto-ayuda').textContent = cfg.costo ? 'Costo: ' + fmtMonto(cfg.costo) : 'Evento sin costo';
+    const pie = $('#modal-inscripto .modal-footer');
+    const borrar = $('[data-act="insc-borrar"]', pie);
+    if (borrar) borrar.remove();
+    if (i) pie.insertAdjacentHTML('afterbegin', `<button type="button" class="btn btn-outline-danger me-auto" data-act="insc-borrar" data-id="${esc(i.id)}"><i class="bi bi-trash"></i></button>`);
+    bootstrap.Modal.getOrCreateInstance('#modal-inscripto').show();
+  }
+  async function guardarInscripto(e) {
+    e.preventDefault();
+    const payload = {
+      id: $('#i-id').value, eventoId: S.insc.evento.id, nombre: $('#i-nombre').value.trim(), telefono: $('#i-telefono').value.trim(),
+      email: $('#i-email').value.trim(), edad: $('#i-edad').value, estado: $('#i-estado').value, observaciones: $('#i-observaciones').value.trim(),
+      montoPagado: $('#i-monto').value, formaPago: $('#i-forma').value, notas: $('#i-notas').value.trim()
+    };
+    if (payload.nombre.length < 3) return toast('Ingresá nombre y apellido.', 'warning');
+    const btn = $('#i-guardar');
+    busy(btn, true, 'Guardando…');
+    try {
+      const r = await api('guardarInscripcion', payload);
+      bootstrap.Modal.getInstance('#modal-inscripto').hide();
+      toast(r.estado === 'ESPERA' && !payload.id ? 'Cupo completo: quedó en lista de espera.' : 'Inscripción guardada.', r.estado === 'ESPERA' && !payload.id ? 'warning' : 'success');
+      S.eventos = null;
+      cargarInscripciones(S.inscEventoId, true);
+    } catch (err) { toast(err.message, 'danger'); }
+    busy(btn, false);
+  }
+  async function borrarInscripto(id) {
+    const i = S.insc.inscripciones.find(x => x.id === id);
+    bootstrap.Modal.getInstance('#modal-inscripto').hide();
+    const ok = await ask({ title: 'Borrar inscripción', message: `¿Borrar a <b>${esc(i ? i.nombre : '')}</b>? Si solo no va a ir, mejor marcala como <b>Cancelada</b> para conservar el registro.`, input: false, okText: 'Borrar', okClass: 'btn-danger' });
+    if (!ok) return;
+    try { await api('borrarInscripcion', { id }); toast('Inscripción borrada.'); cargarInscripciones(S.inscEventoId, true); } catch (err) { toast(err.message, 'danger'); }
+  }
+  function filasInscriptos(conPagos) {
+    const cfg = S.insc.evento.inscripcion || { costo: 0 };
+    const cab = ['#', 'Nombre', 'Edad', 'Celular', 'Correo', 'Estado', 'Observaciones'].concat(conPagos ? ['Pagado', 'Forma de pago', 'Situación'] : []).concat(['Notas']);
+    return [cab].concat(S.insc.inscripciones.map((i, n) => [n + 1, i.nombre, i.edad, i.telefono, i.email, (EST_INSC[i.estado] || [''])[0], i.observaciones]
+      .concat(conPagos ? [i.montoPagado, i.formaPago, estadoPago(i, cfg.costo)[0]] : []).concat([i.notas])));
+  }
+
+  /* ------------------------------ INSCRIPCIÓN PÚBLICA ------------------------------ */
+  async function mostrarInscripcionPublica(id) {
+    showLoader(false);
+    $('#login').classList.add('d-none');
+    $('#publico').classList.remove('d-none');
+    const body = $('#publico-body');
+    body.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    try {
+      const ev = await rpc('infoInscripcion', id);
+      const cab = `<h1 class="h4 fw-bold text-center mb-1">${esc(ev.titulo)}</h1>
+        <div class="text-center text-muted small mb-3">${esc(ev.departamento)}</div>
+        <div class="info-grid small mb-3">
+          <div class="info-item"><div class="lbl">Cuándo</div>${esc(fmtFecha(ev.inicio))}<br>${esc(fmtRango(ev))}</div>
+          <div class="info-item"><div class="lbl">Dónde</div>${esc(ev.ubicacion)}</div>
+          ${ev.costo ? `<div class="info-item"><div class="lbl">Costo</div>${esc(fmtMonto(ev.costo))}</div>` : ''}
+          ${ev.cierre ? `<div class="info-item"><div class="lbl">Inscripción hasta</div>${esc(fmtYmd(ev.cierre))}</div>` : ''}
+        </div>
+        ${ev.info ? `<div class="alert alert-light border small" style="white-space:pre-wrap">${esc(ev.info)}</div>` : ''}`;
+      if (!ev.abierta) { body.innerHTML = cab + `<div class="alert alert-warning mb-0">${esc(ev.motivo)}</div>`; return; }
+      body.innerHTML = cab + `
+        ${ev.lleno ? '<div class="alert alert-warning small">El cupo está completo: si te inscribís, quedás <b>en lista de espera</b>.</div>' : ''}
+        <form id="form-publico" novalidate>
+          <div class="mb-3"><label class="form-label">Nombre y apellido *</label><input class="form-control" id="pu-nombre" maxlength="100" autocomplete="name"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-sm-7"><label class="form-label">Celular (WhatsApp) *</label><input type="tel" class="form-control" id="pu-telefono" maxlength="30" autocomplete="tel" placeholder="Ej.: 11 2345-6789"></div>
+            <div class="col-sm-5"><label class="form-label">Edad</label><input type="number" min="0" max="120" class="form-control" id="pu-edad"></div>
+          </div>
+          <div class="mb-3"><label class="form-label">Correo <span class="text-muted small">(para recibir la confirmación)</span></label><input type="email" class="form-control" id="pu-email" autocomplete="email"></div>
+          <div class="mb-3"><label class="form-label">¿Algo que debamos saber? <span class="text-muted small">(alergias, comidas, salud)</span></label><textarea class="form-control" id="pu-obs" rows="2" maxlength="1000"></textarea></div>
+          <input type="text" id="pu-web" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+          <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Inscribirme</button>
+          <div id="pu-error" class="alert alert-danger small mt-3 d-none"></div>
+        </form>`;
+      $('#form-publico').addEventListener('submit', async e => {
+        e.preventDefault();
+        const datos = { nombre: $('#pu-nombre').value.trim(), telefono: $('#pu-telefono').value.trim(), edad: $('#pu-edad').value, email: $('#pu-email').value.trim(), observaciones: $('#pu-obs').value.trim(), web: $('#pu-web').value };
+        const err = $('#pu-error');
+        const falla = m => { err.textContent = m; err.classList.remove('d-none'); };
+        if (datos.nombre.length < 3) return falla('Ingresá tu nombre y apellido.');
+        if (datos.telefono.replace(/\D/g, '').length < 8) return falla('Ingresá tu celular con característica.');
+        if (datos.email && !isEmail(datos.email)) return falla('El correo no es válido.');
+        const btn = $('#form-publico button[type=submit]');
+        busy(btn, true, 'Enviando…');
+        try {
+          const r = await rpc('inscribirPublico', id, datos);
+          body.innerHTML = cab + `<div class="text-center py-3">
+            <i class="bi bi-${r.estado === 'ESPERA' ? 'hourglass-split text-warning' : 'check-circle-fill text-success'}" style="font-size:3rem"></i>
+            <h2 class="h5 fw-bold mt-2">${r.estado === 'ESPERA' ? 'Quedaste en lista de espera' : '¡Listo, ya estás inscripto/a!'}</h2>
+            <p class="text-muted small mb-0">${r.estado === 'ESPERA' ? 'Si se libera un lugar, los organizadores te van a avisar.' : 'Los organizadores se van a comunicar con vos.'}${datos.email ? ' Te enviamos la confirmación por correo.' : ''}</p>
+          </div>`;
+        } catch (er) { falla(er.message); busy(btn, false); }
+      });
+    } catch (err) {
+      body.innerHTML = `<div class="alert alert-warning mb-0">${esc(err.message)}</div>`;
+    }
+  }
+
+  /* ------------------------------ CALENDARIO MENSUAL ------------------------------ */
+  function renderCalendario(evs) {
+    const hoy = new Date();
+    if (!S.calMes) S.calMes = { y: hoy.getFullYear(), m: hoy.getMonth() };
+    const { y, m } = S.calMes;
+    const primero = new Date(y, m, 1);
+    const inicio = new Date(y, m, 1 - ((primero.getDay() + 6) % 7)); // semanas de lunes a domingo
+    const z = n => String(n).padStart(2, '0');
+    const ymd = d => `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`;
+    const hoyStr = ymd(hoy);
+    const porDia = {};
+    evs.forEach(ev => {
+      const a = parseIso(ev.inicio), b = parseIso(ev.fin) || a;
+      if (!a) return;
+      for (let d = new Date(a.y, a.m - 1, a.d), fin = new Date(b.y, b.m - 1, b.d), k = 0; d <= fin && k < 60; d.setDate(d.getDate() + 1), k++) {
+        (porDia[ymd(d)] = porDia[ymd(d)] || []).push(ev);
+      }
+    });
+    Object.keys(porDia).forEach(k => porDia[k].sort((a, b) => a.inicio.localeCompare(b.inicio)));
+    let celdas = '';
+    for (let i = 0; i < 42; i++) {
+      const d = new Date(inicio.getFullYear(), inicio.getMonth(), inicio.getDate() + i);
+      if (i === 35 && d.getMonth() !== m) break; // sin sexta semana vacía
+      const k = ymd(d), lista = porDia[k] || [];
+      celdas += `<div class="cal-day ${d.getMonth() !== m ? 'otro' : ''} ${k === hoyStr ? 'hoy' : ''} ${S.calDia === k ? 'sel' : ''}" data-act="cal-dia" data-fecha="${k}">
+        <div class="cal-num">${d.getDate()}</div>
+        ${lista.slice(0, 3).map(ev => `<span class="cal-ev st-${ev.estado}" data-act="ver" data-id="${esc(ev.id)}" title="${esc(fmtHora(ev.inicio) + ' ' + ev.titulo)}">${esc(fmtHora(ev.inicio))} ${esc(ev.titulo)}</span>`).join('')}
+        ${lista.length > 3 ? `<span class="cal-mas">+${lista.length - 3} más</span>` : ''}
+      </div>`;
+    }
+    const delDia = S.calDia ? (porDia[S.calDia] || []) : [];
+    const [sy, sm, sd] = (S.calDia || '').split('-').map(Number);
+    return `
+      <div class="card mb-3"><div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <button class="btn btn-light" data-act="cal-mover" data-delta="-1" aria-label="Mes anterior"><i class="bi bi-chevron-left"></i></button>
+          <div class="text-center"><div class="fw-bold text-capitalize">${MESES_LARGOS[m]} ${y}</div><a href="#" class="small" data-act="cal-hoy">Hoy</a></div>
+          <button class="btn btn-light" data-act="cal-mover" data-delta="1" aria-label="Mes siguiente"><i class="bi bi-chevron-right"></i></button>
+        </div>
+        <div class="cal-grid mb-1">${['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(x => `<div class="cal-head">${x}</div>`).join('')}</div>
+        <div class="cal-grid">${celdas}</div>
+        <div class="d-flex flex-wrap gap-3 small text-muted mt-2">
+          <span><span class="cal-ev st-APROBADO d-inline-block" style="width:14px;height:10px;font-size:0"></span> Aprobado</span>
+          <span><span class="cal-ev st-PENDIENTE d-inline-block" style="width:14px;height:10px;font-size:0"></span> Pendiente</span>
+          <span><span class="cal-ev st-CANCELADO d-inline-block" style="width:14px;height:10px;font-size:0"></span> Cancelado / rechazado</span>
+        </div>
+      </div></div>
+      ${S.calDia ? `<div class="month-label">${DOW_LARGO[new Date(sy, sm - 1, sd).getDay()]} ${sd} de ${MESES_LARGOS[sm - 1]}</div>
+        ${delDia.length ? delDia.map(ev => eventCard(ev)).join('') : empty('calendar', 'No hay eventos este día.')}` : '<div class="small text-muted text-center">Tocá un día para ver sus eventos.</div>'}`;
+  }
+
   /* ------------------------------ AVISOS A EQUIPOS ------------------------------ */
   async function cargarReglas() {
     const box = $('#reglas-box');
@@ -1735,6 +2178,15 @@
             <div class="col-md-6"><div class="lbl small text-uppercase fw-semibold text-muted mb-2">Presupuesto / Tesorería</div>
               ${ev.requierePresupuesto ? `<div class="fs-5 fw-bold">${ev.monto != null ? fmtMonto(ev.monto) : 'Requiere presupuesto'}</div><div class="small">${esc(ev.obsPresupuesto)}</div><div class="mt-1">${badgeTes(ev.estadoTesoreria)}</div>` : '<div class="small text-muted">No requiere gastos.</div>'}</div>
           </div>
+          ${ev.inscripcion ? `<div class="card bg-light mb-3"><div class="card-body py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+              <div class="fw-semibold"><i class="bi bi-ticket-perforated me-1"></i>Inscripciones ${ev.inscripcion.abierta ? '<span class="badge text-bg-success">Abiertas</span>' : '<span class="badge text-bg-secondary">Cerradas</span>'}</div>
+              ${ev.permisos.inscripciones ? `<button class="btn btn-sm btn-primary" data-act="inscripciones" data-id="${esc(ev.id)}"><i class="bi bi-people me-1"></i>Ver inscriptos</button>` : ''}
+            </div>
+            ${ev.inscripcion.cupo ? `${barra(Math.round(ev.inscripcion.confirmados * 100 / ev.inscripcion.cupo))}<div class="small text-muted mt-1">${ev.inscripcion.confirmados} de ${ev.inscripcion.cupo} lugares${ev.inscripcion.espera ? ` · ${ev.inscripcion.espera} en espera` : ''}</div>`
+              : `<div class="small text-muted">${ev.inscripcion.confirmados} inscripto(s), sin límite de cupo</div>`}
+            <div class="small text-muted">${ev.inscripcion.costo ? 'Costo: ' + fmtMonto(ev.inscripcion.costo) + (ev.inscripcion.recaudado != null ? ' · Recaudado: ' + fmtMonto(ev.inscripcion.recaudado) : '') : 'Sin costo'}${ev.inscripcion.cierre ? ' · Cierra: ' + esc(fmtYmd(ev.inscripcion.cierre)) : ''}</div>
+          </div></div>` : ''}
           ${ev.progreso.total || ev.permisos.planificar ? `<div class="card bg-light mb-4"><div class="card-body py-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
               <div class="fw-semibold"><i class="bi bi-kanban me-1"></i>Plan de organización</div>
@@ -1946,6 +2398,12 @@
       $('#f-presupuesto').checked = ev.requierePresupuesto;
       $('#f-monto').value = ev.monto || '';
       $('#f-obs-presupuesto').value = ev.obsPresupuesto;
+      const ins = ev.inscripcion;
+      $('#f-inscripcion').checked = !!ins;
+      $('#f-cupo').value = ins && ins.cupo ? ins.cupo : '';
+      $('#f-costo-insc').value = ins && ins.costo ? ins.costo : '';
+      $('#f-cierre-insc').value = ins ? ins.cierre : '';
+      $('#f-info-insc').value = ins ? ins.info : '';
     } else if (deps.length === 1) {
       $('#f-departamento').value = deps[0];
     }
@@ -1967,6 +2425,7 @@
     $('#wrap-espacio').classList.toggle('d-none', ext);
     $('#wrap-direccion').classList.toggle('d-none', !ext);
     $('#wrap-presupuesto').classList.toggle('d-none', !$('#f-presupuesto').checked);
+    $('#wrap-inscripcion').classList.toggle('d-none', !$('#f-inscripcion').checked);
   }
 
   function verMapa() {
@@ -2017,6 +2476,8 @@
       requierePresupuesto: $('#f-presupuesto').checked,
       monto: $('#f-monto').value,
       obsPresupuesto: $('#f-obs-presupuesto').value.trim(),
+      inscripcion: $('#f-inscripcion').checked, cupo: $('#f-cupo').value, costoInscripcion: $('#f-costo-insc').value,
+      cierreInscripcion: $('#f-cierre-insc').value, infoInscripcion: $('#f-info-insc').value.trim(),
       encargados: S.chips.enc.get(),
       colaboradores: S.chips.col.get()
     };
@@ -2063,6 +2524,26 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
+      case 'area-nueva': abrirArea(null); break;
+      case 'area-editar': abrirArea(el.dataset.nombre); break;
+      case 'inscripciones': abrirInscripciones(id); break;
+      case 'insc-nueva': abrirInscripto(null); break;
+      case 'insc-editar': abrirInscripto(S.insc.inscripciones.find(i => i.id === id)); break;
+      case 'insc-borrar': borrarInscripto(id); break;
+      case 'insc-copiar':
+        try { await navigator.clipboard.writeText(S.insc.enlace); toast('Enlace copiado.'); }
+        catch (e) { window.prompt('Copiá el enlace:', S.insc.enlace); }
+        break;
+      case 'insc-csv': descargarCsv('Inscriptos ' + S.insc.evento.titulo, filasInscriptos(true)); break;
+      case 'insc-imprimir': imprimirTabla('Inscriptos: ' + S.insc.evento.titulo, fmtFecha(S.insc.evento.inicio) + ' · ' + S.insc.evento.ubicacionTexto, filasInscriptos(true)); break;
+      case 'eq-csv': exportarEquipos(); break;
+      case 'modo-agenda': S.modoAgenda = el.dataset.modo; store.set('cca_modo_agenda', S.modoAgenda); renderEventos(); break;
+      case 'cal-dia': S.calDia = S.calDia === el.dataset.fecha ? null : el.dataset.fecha; renderEventos(); break;
+      case 'cal-mover': {
+        const d = new Date(S.calMes.y, S.calMes.m + Number(el.dataset.delta), 1);
+        S.calMes = { y: d.getFullYear(), m: d.getMonth() }; S.calDia = null; renderEventos(); break;
+      }
+      case 'cal-hoy': { const h = new Date(); S.calMes = { y: h.getFullYear(), m: h.getMonth() }; S.calDia = null; renderEventos(); break; }
       case 'avisar-wa': avisarEquipoWa(S.detalle); break;
       case 'wa-enviado': marcarWaEnviado(el); break;
       case 'mi-perfil': abrirPerfil(null); break;
@@ -2100,7 +2581,13 @@
   $('#login-codigo').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); if (e.target.value.length === 6) $('#form-codigo').requestSubmit(); });
 
   $('#form-evento').addEventListener('submit', guardarEvento);
-  ['#f-tipo', '#f-presupuesto', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', actualizarFormulario));
+  ['#f-tipo', '#f-presupuesto', '#f-inscripcion', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', actualizarFormulario));
+  // Sugerir inscripción para los tipos que suelen tenerla.
+  $('#f-tipo').addEventListener('change', () => {
+    if (!$('#f-id').value && /Retiro|Campamento|Convención|Capacitaciones/.test($('#f-tipo').value)) { $('#f-inscripcion').checked = true; actualizarFormulario(); }
+  });
+  $('#form-area').addEventListener('submit', guardarArea);
+  $('#form-inscripto').addEventListener('submit', guardarInscripto);
   ['#f-inicio', '#f-fin', '#f-espacio', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', chequearConflictos));
   $('#f-inicio').addEventListener('change', () => {
     const ini = $('#f-inicio').value, fin = $('#f-fin').value;
