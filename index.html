@@ -276,6 +276,7 @@
               <button type="button" class="btn btn-outline-primary active" data-act="modo-agenda" data-modo="lista"><i class="bi bi-list-ul me-1"></i>Lista</button>
               <button type="button" class="btn btn-outline-primary" data-act="modo-agenda" data-modo="calendario"><i class="bi bi-calendar3 me-1"></i>Calendario</button>
             </div>
+            <button class="btn btn-outline-primary need-series d-none" data-act="go" data-view="fijos" title="Cultos y reuniones semanales"><i class="bi bi-arrow-repeat me-1"></i>Eventos fijos</button>
             <button class="btn btn-sun need-create" data-act="nuevo"><i class="bi bi-plus-lg me-1"></i>Nuevo evento</button>
           </div>
         </div>
@@ -298,6 +299,8 @@
       <section id="v-tareas" class="view d-none"></section>
       <section id="v-whatsapp" class="view d-none"></section>
       <section id="v-areas" class="view d-none"></section>
+      <section id="v-fijos" class="view d-none"></section>
+      <section id="v-links" class="view d-none"></section>
       <section id="v-inscripciones" class="view d-none"></section>
       <section id="v-proyecto" class="view d-none"></section>
       <section id="v-equipos" class="view d-none"></section>
@@ -326,6 +329,10 @@
               <div class="col-md-6"><label class="form-label">Tipo de reunión *</label><select class="form-select" id="f-tipo" required></select></div>
               <div class="col-md-12 d-none" id="wrap-detalle"><label class="form-label">Categoría / detalle de la reunión *</label><input class="form-control" id="f-tipo-detalle" maxlength="150" placeholder="Ej.: Cena de líderes, Noche de talentos…"></div>
               <div class="col-md-12"><label class="form-label">Descripción / objetivo</label><textarea class="form-control" id="f-descripcion" rows="2" maxlength="3000"></textarea></div>
+              <div class="col-md-7"><label class="form-label"><i class="bi bi-mic me-1"></i>Predicador/a <span class="text-muted small">(opcional)</span></label><div id="f-predicador"></div></div>
+              <div class="col-md-5 d-flex align-items-end"><div class="form-check form-switch mb-2">
+                <input class="form-check-input" type="checkbox" id="f-santacena"><label class="form-check-label fw-semibold" for="f-santacena">🍞 Santa Cena</label></div></div>
+              <div class="col-12 d-none" id="wrap-reflexion"><label class="form-label">Encargado/a de compartir la reflexión de Santa Cena</label><div id="f-reflexion"></div></div>
             </div>
           </div>
 
@@ -472,6 +479,59 @@
           <div class="form-text" id="a-ayuda-renombrar"></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="a-guardar">Guardar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: EVENTO FIJO ======================= -->
+  <div class="modal fade" id="modal-serie" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+      <form class="modal-content" id="form-serie" novalidate>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="s-titulo-modal">Nuevo evento fijo</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="s-id">
+          <div class="row g-3">
+            <div class="col-md-6"><label class="form-label">Nombre *</label><input class="form-control" id="s-titulo" maxlength="150" placeholder="Ej.: Reunión General"></div>
+            <div class="col-md-6"><label class="form-label">Área *</label><select class="form-select" id="s-dep"></select></div>
+            <div class="col-md-6"><label class="form-label">Tipo de reunión *</label><select class="form-select" id="s-tipo"></select></div>
+            <div class="col-md-6"><label class="form-label">Se repite cada *</label><select class="form-select" id="s-dia"></select></div>
+            <div class="col-6 col-md-3"><label class="form-label">Desde *</label><input type="time" class="form-control" id="s-inicio"></div>
+            <div class="col-6 col-md-3"><label class="form-label">Hasta *</label><input type="time" class="form-control" id="s-fin"></div>
+            <div class="col-md-6"><label class="form-label">Lugar</label>
+              <div class="input-group"><select class="form-select" id="s-ubic" style="max-width:130px"><option value="IGLESIA">Iglesia</option><option value="EXTERNA">Externo</option></select>
+                <select class="form-select" id="s-espacio"></select><input class="form-control d-none" id="s-direccion" maxlength="300" placeholder="Dirección"></div></div>
+            <div class="col-12"><label class="form-label">Servicios de apoyo</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="s-audio"><label class="form-check-label" for="s-audio">Audio</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="s-video"><label class="form-check-label" for="s-video">Video / Proyección</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="s-grabacion"><label class="form-check-label" for="s-grabacion">Grabación</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="s-streaming"><label class="form-check-label" for="s-streaming">Streaming</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="s-alabanza"><label class="form-check-label" for="s-alabanza">Ministerio de Alabanza</label></div>
+              </div></div>
+            <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="s-santacena"><label class="form-check-label" for="s-santacena">🍞 Marcar <b>Santa Cena</b> automáticamente la 2ª vez de cada mes (ej.: 2° domingo)</label></div></div>
+            <div class="col-12"><label class="form-label">Descripción</label><textarea class="form-control" id="s-descripcion" rows="2" maxlength="1500"></textarea></div>
+            <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" id="s-activa" checked><label class="form-check-label" for="s-activa">Activo (se siguen creando las próximas fechas)</label></div></div>
+          </div>
+          <div class="alert alert-info small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Las fechas que ya fueron modificadas a mano (predicador, equipo, horario…) <b>no se tocan</b>. Las demás fechas futuras se actualizan con estos datos.</div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="s-guardar"><i class="bi bi-save me-1"></i>Guardar</button></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: LINK ======================= -->
+  <div class="modal fade" id="modal-link" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <form class="modal-content" id="form-link" novalidate>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="l-titulo-modal">Nuevo link</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+          <input type="hidden" id="l-id">
+          <div class="mb-3"><label class="form-label">Título *</label><input class="form-control" id="l-titulo" maxlength="150" placeholder="Ej.: Carpeta de prédicas 2026"></div>
+          <div class="mb-3"><label class="form-label">Link *</label><input type="url" class="form-control" id="l-url" placeholder="https://"></div>
+          <div class="mb-3"><label class="form-label">Categoría</label><input class="form-control" id="l-categoria" list="dl-categorias" maxlength="60" placeholder="Ej.: Prédicas, Formularios, Música…"><datalist id="dl-categorias"></datalist></div>
+          <div class="mb-1"><label class="form-label">Descripción</label><textarea class="form-control" id="l-descripcion" rows="2" maxlength="500"></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="l-guardar">Guardar</button></div>
       </form>
     </div>
   </div>
@@ -625,7 +685,9 @@
     TESORERIA_VISTO_BUENO: 'Visto bueno Tesorería', TESORERIA_OBSERVA: 'Tesorería observó', RECORDATORIO: 'Recordatorio enviado',
     ASIGNAR_MIEMBRO: 'Asignó miembro', ACTUALIZAR_MIEMBRO: 'Actualizó miembro', QUITAR_MIEMBRO: 'Quitó miembro',
     CONFIGURACION: 'Configuración', AVISO_EQUIPO: 'Aviso a equipo', PERFIL: 'Perfil',
-    AREA_CREAR: 'Creó área', AREA_EDITAR: 'Editó área', INSCRIPCION_CREAR: 'Nueva inscripción',
+    AREA_CREAR: 'Creó área', AREA_EDITAR: 'Editó área', FIJO_CREAR: 'Creó evento fijo', FIJO_EDITAR: 'Editó evento fijo',
+    EVENTOS_FIJOS: 'Fechas de eventos fijos', LINK_CREAR: 'Agregó link', LINK_EDITAR: 'Editó link', LINK_BORRAR: 'Borró link',
+    PERMISO_LINKS: 'Permiso banco de links', INSCRIPCION_CREAR: 'Nueva inscripción',
     INSCRIPCION_EDITAR: 'Editó inscripción', INSCRIPCION_BORRAR: 'Borró inscripción',
     TAREA_CREAR: 'Agregó paso', TAREA_EDITAR: 'Actualizó paso', TAREA_COMPLETAR: 'Completó paso', TAREA_BORRAR: 'Borró paso',
     PLANTILLA: 'Cargó pasos sugeridos', PLAN_COMPLETO: 'Plan completo', RECORDATORIO_TAREA: 'Recordatorio de plazo', SETUP: 'Instalación', ERROR_CORREO: 'Error de correo', CORREO_SIN_CUOTA: 'Sin cuota de correo'
@@ -828,6 +890,7 @@
     llenarSelectsFijos();
     S.modoAgenda = store.get('cca_modo_agenda') || 'lista';
     $$('.need-create').forEach(b => b.classList.toggle('d-none', !u.canCreate));
+    $$('.need-series').forEach(b => b.classList.toggle('d-none', !u.canSeries));
     showLoader(false);
     if (PROYECTO_INICIAL) abrirProyecto(PROYECTO_INICIAL);
     else go('inicio');
@@ -850,8 +913,9 @@
       ['asignaciones', 'person-check', 'Mis asignaciones', true, c.asignaciones],
       ['tareas', 'list-check', 'Mis tareas', true, c.tareas],
       ['whatsapp', 'whatsapp', 'Avisos WhatsApp', u.organiza],
+      ['links', 'link-45deg', 'Banco de links', u.canLinks],
       ['areas', 'diagram-3', 'Áreas', u.canAreas],
-      ['aprobaciones', 'patch-check', 'Aprobaciones', u.isSuper, c.aprobaciones],
+      ['aprobaciones', 'patch-check', 'Aprobaciones', u.canApprove, c.aprobaciones],
       ['tesoreria', 'cash-coin', 'Tesorería', u.isTesoreria, c.tesoreria],
       ['equipos', 'people', 'Equipos', u.canManageTeams],
       ['bitacora', 'journal-text', 'Bitácora', u.canViewLog],
@@ -879,7 +943,8 @@
     inicio: cargarInicio, eventos: cargarEventos, aprobaciones: cargarAprobaciones, tesoreria: cargarTesoreria,
     asignaciones: cargarAsignaciones, equipos: cargarEquipos, bitacora: cargarBitacora, config: cargarConfig,
     tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa,
-    areas: cargarAreas, inscripciones: () => cargarInscripciones(S.inscEventoId)
+    areas: cargarAreas, inscripciones: () => cargarInscripciones(S.inscEventoId),
+    fijos: cargarFijos, links: cargarLinks
   };
   function go(view) {
     const sub = v => v === 'proyecto' || v === 'inscripciones'; // pantallas que se abren desde un evento
@@ -906,13 +971,15 @@
       <div class="card-body d-flex gap-3 py-3">
         <div class="date-badge"><span class="dow">${DOW[p.dow]}</span><span class="day">${p.d}</span><span class="mon">${MESES[p.m - 1]}</span></div>
         <div class="flex-grow-1 min-w-0">
-          <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><h3 class="ev-title text-truncate">${esc(ev.titulo)}</h3>${badgeEstado(ev.estado)}
+          <div class="d-flex flex-wrap align-items-center gap-2 mb-1"><h3 class="ev-title text-truncate">${ev.serieId ? '<i class="bi bi-arrow-repeat text-muted me-1" title="Evento fijo semanal"></i>' : ''}${esc(ev.titulo)}</h3>${badgeEstado(ev.estado)}
+            ${ev.santaCena ? '<span class="badge rounded-pill badge-estado" style="background:#7a1f2b">🍞 Santa Cena</span>' : ''}
             ${ev.requierePresupuesto && ev.estadoTesoreria !== 'NO_APLICA' && (S.boot.user.isTesoreria || ev.permisos.editar || S.boot.user.isPastor) ? badgeTes(ev.estadoTesoreria) : ''}</div>
           <div class="ev-meta">
             <span><i class="bi bi-people"></i>${esc(ev.departamento)}</span>
             <span><i class="bi bi-tag"></i>${esc(tipoTexto(ev))}</span>
             <span><i class="bi bi-clock"></i>${esc(fmtRango(ev))}</span>
             <span class="text-truncate"><i class="bi bi-geo-alt"></i>${esc(ubicCorta(ev))}</span>
+            ${ev.predicador ? `<span class="text-truncate"><i class="bi bi-mic"></i>${esc(ev.predicador.nombre)}</span>` : ''}
           </div>
           ${serviceIcons(ev) ? `<div class="mt-2">${serviceIcons(ev)}</div>` : ''}
           ${progresoMini(ev)}
@@ -960,7 +1027,7 @@
           ${d.correo.omitidos ? `Hoy no se enviaron <b>${d.correo.omitidos}</b> aviso(s) por falta de cupo: los recordatorios se reintentan solos cuando haya cupo, y para lo urgente podés usar <a href="#" data-act="go" data-view="whatsapp">Avisos WhatsApp</a>.` : ''}</div></div>` : ''}
         <div class="row g-3 mb-4">
           ${kpi('calendar-week', 'Eventos en los próximos 7 días', d.kpis.semana, 'eventos', 'primary')}
-          ${kpi('hourglass-split', 'Pendientes de aprobación', d.kpis.pendientes, u.isSuper ? 'aprobaciones' : 'eventos', 'warning')}
+          ${kpi('hourglass-split', 'Pendientes de aprobación', d.kpis.pendientes, u.canApprove ? 'aprobaciones' : 'eventos', 'warning')}
           ${u.isTesoreria
             ? kpi('cash-coin', 'Presupuestos a revisar', d.kpis.presupuestos, 'tesoreria', 'info', d.kpis.presupuestos ? fmtMonto(d.kpis.montoPendiente) : '')
             : kpi('person-check', 'Asignaciones por confirmar', d.kpis.misPendientes, 'asignaciones', 'info')}
@@ -968,7 +1035,7 @@
         </div>
         <div class="row g-4">
           <div class="col-lg-7">
-            ${u.isSuper && d.pendientes.length ? `<div class="card mb-4"><div class="card-header d-flex justify-content-between align-items-center"><span><i class="bi bi-patch-check me-1 text-warning"></i>Esperan tu aprobación</span><a href="#" data-act="go" data-view="aprobaciones" class="small">Ver todas</a></div>
+            ${u.canApprove && d.pendientes.length ? `<div class="card mb-4"><div class="card-header d-flex justify-content-between align-items-center"><span><i class="bi bi-patch-check me-1 text-warning"></i>Esperan tu aprobación</span><a href="#" data-act="go" data-view="aprobaciones" class="small">Ver todas</a></div>
               <div class="card-body">${d.pendientes.map(e => eventCard(e)).join('')}</div></div>` : ''}
             <div class="card"><div class="card-header"><i class="bi bi-calendar-week me-1"></i>Próximos 7 días</div>
               <div class="card-body">${d.semana.length ? d.semana.map(e => eventCard(e)).join('') : empty('calendar2-heart', 'No hay eventos aprobados para esta semana.')}</div></div>
@@ -1030,7 +1097,7 @@
         .sort((a, b) => b.fechaRevision.localeCompare(a.fechaRevision)).slice(0, 10);
       el.innerHTML = `
         <div class="mb-3"><h2 class="page-title">Panel pastoral de aprobaciones</h2>
-        <div class="text-muted small">Solo los Pastores Principales pueden aprobar o rechazar. Al aprobar, el evento se publica en Google Calendar y se notifica al equipo.</div></div>
+        <div class="text-muted small">Solo los Pastores Principales y la Administración pueden aprobar o rechazar. Al aprobar, el evento se publica en Google Calendar y se notifica al equipo.</div></div>
         <div class="card mb-4"><div class="card-header"><i class="bi bi-hourglass-split me-1 text-warning"></i>Pendientes (${pend.length})</div><div class="card-body">
         ${pend.length ? pend.map(e => eventCard(e, `
           ${e.requierePresupuesto ? `<div class="small mt-2"><i class="bi bi-cash-coin me-1"></i>Presupuesto: <b>${fmtMonto(e.monto)}</b> · ${badgeTes(e.estadoTesoreria)}</div>` : ''}
@@ -1157,7 +1224,7 @@
   }
   const AYUDA_ROL = {
     SUPERADMIN: 'Pastor/a Principal: acceso total y aprobación de eventos.',
-    ADMIN: 'Administración: gestiona equipos y configuración (no aprueba eventos).',
+    ADMIN: 'Administración: gestiona equipos y configuración, y también aprueba eventos.',
     PASTOR: 'Pastor/a: ve toda la agenda y puede crear eventos para cualquier área.',
     SECRETARIA: 'Secretaría: ve toda la agenda, crea eventos, carga personas y ve perfiles y bitácora (no aprueba).',
     ENCARGADO: 'Encargado/a: crea y edita eventos del área y asigna colaboradores.',
@@ -1567,12 +1634,21 @@
   function primerNombre(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
   function cuandoTexto(dias) { return dias === 0 ? 'HOY' : dias === 1 ? 'MAÑANA' : dias > 1 ? `en ${dias} días` : `hace ${-dias} día${dias === -1 ? '' : 's'}`; }
 
+  function rolTexto(rol) {
+    return { ENCARGADO: 'Encargado/a', COLABORADOR: 'Colaborador/a', PREDICADOR: 'Predicación', REFLEXION: 'Reflexión de Santa Cena' }[rol] || rol;
+  }
+  /** Equipo de un evento para avisar: encargados, colaboradores, predicador y reflexión de Santa Cena. */
+  function personasAviso(ev) {
+    return ev.participantes.filter(p => p.estado !== 'RECHAZADO')
+      .concat(ev.predicador ? [{ email: ev.predicador.email, nombre: ev.predicador.nombre, rol: 'PREDICADOR', estado: 'ACEPTADO' }] : [])
+      .concat(ev.santaCena && ev.reflexion ? [{ email: ev.reflexion.email, nombre: ev.reflexion.nombre, rol: 'REFLEXION', estado: 'ACEPTADO' }] : []);
+  }
   function msgEvento(ev, p) {
     const pend = p.rol === 'COLABORADOR' && p.estado === 'PENDIENTE';
     return `¡Hola ${primerNombre(p.nombre)}! 👋\nTe recordamos: *${ev.titulo}* (${ev.departamento})` +
       (ev.diasFaltan != null ? ` es *${cuandoTexto(ev.diasFaltan)}*` : '') + `.\n` +
       `📅 ${fmtFecha(ev.inicio)}, de ${fmtHora(ev.inicio)} a ${fmtHora(ev.fin)} hs\n📍 ${ev.ubicacion || ev.ubicacionTexto}\n` +
-      `🙋 Tu lugar: ${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}\n` +
+      `🙋 Tu lugar: ${rolTexto(p.rol)}\n` +
       (pend ? `¿Nos confirmás tu participación? Podés hacerlo acá: ${urlApp()}?evento=${ev.id}\n` : `Detalles: ${urlApp()}?evento=${ev.id}\n`) +
       `¡Gracias por servir! 🙏 Centro Cristiano Amanecer`;
   }
@@ -1617,7 +1693,7 @@
                 <span class="badge ${ev.diasFaltan <= 1 ? 'text-bg-warning' : 'text-bg-light border'}">${esc(cuandoTexto(ev.diasFaltan))} · ${esc(fmtCorta(ev.inicio))}</span>
               </div>
               ${ev.personas.length ? ev.personas.map(p => filaWa('ev:' + ev.id + ':' + p.email, p.nombre || p.email, p.wa, msgEvento(ev, p),
-                `${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : '<div class="small text-muted">Sin equipo asignado.</div>'}
+                `${rolTexto(p.rol)}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : '<div class="small text-muted">Sin equipo asignado.</div>'}
             </div>`).join('<hr>') : empty('calendar-check', 'No hay eventos aprobados en los próximos días.')}
         </div></div>
         <div class="card"><div class="card-header"><i class="bi bi-list-check me-1"></i>Pasos con plazo cercano o vencido (${d.tareas.length})</div><div class="card-body">
@@ -1634,11 +1710,11 @@
     const p0 = parseIso(ev.inicio), hoy = new Date();
     const dias = p0 ? Math.round((new Date(p0.y, p0.m - 1, p0.d) - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000) : null;
     const evMsg = Object.assign({}, ev, { diasFaltan: dias != null && dias >= 0 ? dias : null });
-    const personas = ev.participantes.filter(p => p.estado !== 'RECHAZADO');
+    const personas = personasAviso(ev);
     $('#wa-titulo').textContent = 'Avisar al equipo: ' + ev.titulo;
     $('#wa-body').innerHTML = `<div class="small text-muted mb-3">Tocá <b>Enviar</b> en cada persona: se abre WhatsApp con el mensaje listo (fecha, horario, lugar y enlace).</div>` +
       (personas.length ? personas.map(p => filaWa('ev:' + ev.id + ':' + p.email, p.nombre || p.email, waDe(p.email), msgEvento(evMsg, p),
-        `${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : empty('people', 'Este evento no tiene equipo asignado.'));
+        `${rolTexto(p.rol)}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : empty('people', 'Este evento no tiene equipo asignado.'));
     bootstrap.Modal.getOrCreateInstance('#modal-wa').show();
   }
 
@@ -1750,6 +1826,158 @@
     } catch (err) {
       cont.innerHTML = `<div class="modal-header"><h5 class="modal-title">Perfil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-danger mb-0">${esc(err.message)}</div></div>`;
     }
+  }
+
+  /* ------------------------------ EVENTOS FIJOS ------------------------------ */
+  async function cargarFijos() {
+    const el = $('#v-fijos');
+    cargando(el);
+    try {
+      S.fijos = await api('series');
+      const d = S.fijos;
+      el.innerHTML = `
+        <button class="btn btn-link px-0 mb-2" data-act="go" data-view="eventos"><i class="bi bi-arrow-left me-1"></i>Agenda</button>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <div><h2 class="page-title"><i class="bi bi-arrow-repeat me-1"></i>Eventos fijos</h2>
+            <div class="text-muted small">Cultos y reuniones que se repiten cada semana. La app crea solas las fechas de las próximas ${d.semanas} semanas, ya aprobadas y en Google Calendar. Cada fecha se puede modificar (predicador, Santa Cena, horario) o cancelar desde la Agenda sin afectar a las demás.</div></div>
+          <div class="d-flex gap-2"><button class="btn btn-outline-primary" data-act="fijos-generar" title="Crear ahora las fechas que falten"><i class="bi bi-calendar-plus me-1"></i>Completar fechas</button>
+            <button class="btn btn-primary" data-act="fijo-nuevo"><i class="bi bi-plus-lg me-1"></i>Nuevo evento fijo</button></div>
+        </div>
+        ${d.series.length ? d.series.map(s => `
+          <div class="card mb-3 ${s.activa ? '' : 'opacity-75'}"><div class="card-body d-flex flex-wrap gap-3 align-items-center">
+            <div class="date-badge"><span class="dow">cada</span><span class="day" style="font-size:1rem">${esc(s.diaNombre.slice(0, 3))}</span><span class="mon">${esc(s.horaInicio)}</span></div>
+            <div class="flex-grow-1 min-w-0">
+              <div class="d-flex flex-wrap gap-2 align-items-center"><h3 class="ev-title">${esc(s.titulo)}</h3>
+                ${s.activa ? '<span class="badge text-bg-success">Activo</span>' : '<span class="badge text-bg-secondary">Pausado</span>'}
+                ${s.santaCenaSegundo ? '<span class="badge rounded-pill" style="background:#7a1f2b">🍞 Santa Cena el 2° ' + esc(s.diaNombre.toLowerCase()) + '</span>' : ''}</div>
+              <div class="ev-meta"><span><i class="bi bi-clock"></i>${esc(s.diaNombre)}s de ${esc(s.horaInicio)} a ${esc(s.horaFin)} hs</span>
+                <span><i class="bi bi-geo-alt"></i>${esc(s.ubicacionTipo === 'EXTERNA' ? s.direccion : s.espacio)}</span><span><i class="bi bi-people"></i>${esc(s.departamento)}</span></div>
+              <div class="small text-muted mt-1">${s.proximas ? `${s.proximas} fecha(s) próximas creadas${s.siguiente ? ' · la siguiente: ' + esc(fmtFecha(s.siguiente)) : ''}` : 'Sin fechas próximas'}</div>
+            </div>
+            <button class="btn btn-sm btn-light" data-act="fijo-editar" data-id="${esc(s.id)}"><i class="bi bi-pencil me-1"></i>Editar</button>
+          </div></div>`).join('') : empty('arrow-repeat', 'No hay eventos fijos.')}`;
+    } catch (err) { errorEn(el, err); }
+  }
+  function abrirFijo(s) {
+    const b = S.boot;
+    $('#form-serie').reset();
+    $('#s-titulo-modal').textContent = s ? 'Editar evento fijo' : 'Nuevo evento fijo';
+    $('#s-id').value = s ? s.id : '';
+    $('#s-dep').innerHTML = b.departamentos.map(x => `<option>${esc(x)}</option>`).join('');
+    $('#s-tipo').innerHTML = b.tipos.map(x => `<option>${esc(x)}</option>`).join('');
+    $('#s-dia').innerHTML = S.fijos.dias.map((x, i) => `<option value="${i}">${esc(x)}</option>`).join('');
+    $('#s-espacio').innerHTML = b.espacios.map(x => `<option>${esc(x)}</option>`).join('');
+    const v = s || { departamento: 'Pastores', tipo: b.tipos[0], diaSemana: 0, horaInicio: '10:30', horaFin: '12:30', ubicacionTipo: 'IGLESIA', espacio: b.espacios[0], activa: true };
+    $('#s-titulo').value = v.titulo || '';
+    $('#s-dep').value = v.departamento; $('#s-tipo').value = v.tipo; $('#s-dia').value = String(v.diaSemana);
+    $('#s-inicio').value = v.horaInicio; $('#s-fin').value = v.horaFin;
+    $('#s-ubic').value = v.ubicacionTipo; $('#s-espacio').value = v.espacio || b.espacios[0]; $('#s-direccion').value = v.direccion || '';
+    ['audio', 'video', 'grabacion', 'streaming', 'alabanza'].forEach(k => { $('#s-' + k).checked = !!v[k]; });
+    $('#s-santacena').checked = !!v.santaCenaSegundo;
+    $('#s-descripcion').value = v.descripcion || '';
+    $('#s-activa').checked = v.activa !== false;
+    ubicFijo();
+    bootstrap.Modal.getOrCreateInstance('#modal-serie').show();
+  }
+  function ubicFijo() {
+    const ext = $('#s-ubic').value === 'EXTERNA';
+    $('#s-espacio').classList.toggle('d-none', ext);
+    $('#s-direccion').classList.toggle('d-none', !ext);
+  }
+  async function guardarFijo(e) {
+    e.preventDefault();
+    const payload = {
+      id: $('#s-id').value, titulo: $('#s-titulo').value.trim(), departamento: $('#s-dep').value, tipo: $('#s-tipo').value,
+      diaSemana: Number($('#s-dia').value), horaInicio: $('#s-inicio').value, horaFin: $('#s-fin').value,
+      ubicacionTipo: $('#s-ubic').value, espacio: $('#s-espacio').value, direccion: $('#s-direccion').value.trim(),
+      audio: $('#s-audio').checked, video: $('#s-video').checked, grabacion: $('#s-grabacion').checked, streaming: $('#s-streaming').checked,
+      alabanza: $('#s-alabanza').checked, santaCenaSegundo: $('#s-santacena').checked, descripcion: $('#s-descripcion').value.trim(), activa: $('#s-activa').checked
+    };
+    if (!payload.titulo) return toast('Escribí el nombre.', 'warning');
+    if (!payload.horaInicio || !payload.horaFin || payload.horaFin <= payload.horaInicio) return toast('Revisá los horarios.', 'warning');
+    const btn = $('#s-guardar');
+    busy(btn, true, 'Guardando y creando fechas…');
+    try {
+      const r = await api('guardarSerie', payload);
+      bootstrap.Modal.getInstance('#modal-serie').hide();
+      toast(`Evento fijo guardado.${r.creadas ? ` Se crearon ${r.creadas} fecha(s).` : ''}`);
+      S.eventos = null;
+      cargarFijos();
+    } catch (err) { toast(err.message, 'danger'); }
+    busy(btn, false);
+  }
+
+  /* ------------------------------ BANCO DE LINKS ------------------------------ */
+  function dominio(url) { try { return new URL(url).hostname.replace(/^www\./, ''); } catch (e) { return ''; } }
+  function iconoLink(url) {
+    const h = dominio(url);
+    return /docs\.google|drive\.google/.test(h) ? 'google' : /youtube|youtu\.be/.test(h) ? 'youtube' : /spotify/.test(h) ? 'spotify'
+      : /instagram/.test(h) ? 'instagram' : /facebook/.test(h) ? 'facebook' : /forms\.gle|forms/.test(url) ? 'ui-checks' : 'link-45deg';
+  }
+  async function cargarLinks() {
+    const el = $('#v-links');
+    cargando(el);
+    try { S.links = await api('links'); renderLinks(); } catch (err) { errorEn(el, err); }
+  }
+  function renderLinks() {
+    const d = S.links, q = (S.linksQ || '').toLowerCase();
+    const lista = d.links.filter(l => !q || [l.titulo, l.url, l.categoria, l.descripcion].join(' ').toLowerCase().includes(q));
+    const cats = [...new Set(lista.map(l => l.categoria))];
+    $('#v-links').innerHTML = `
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+        <div><h2 class="page-title"><i class="bi bi-link-45deg me-1"></i>Banco de links</h2><div class="text-muted small">Accesos útiles para el servicio: carpetas, formularios, prédicas, música…</div></div>
+        <div class="d-flex gap-2"><input class="form-control" style="max-width:220px" id="lk-q" placeholder="Buscar…" value="${esc(S.linksQ || '')}">
+          ${d.puedeEditar ? '<button class="btn btn-primary text-nowrap" data-act="link-nuevo"><i class="bi bi-plus-lg me-1"></i>Agregar</button>' : ''}</div>
+      </div>
+      ${cats.length ? cats.map(c => `<div class="card mb-3"><div class="card-header">${esc(c)}</div><div class="card-body py-1">
+        ${lista.filter(l => l.categoria === c).map(l => `<div class="person">
+          <span class="avatar"><i class="bi bi-${iconoLink(l.url)}"></i></span>
+          <div class="flex-grow-1 min-w-0"><a class="fw-semibold small d-block text-truncate" href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.titulo)} <i class="bi bi-box-arrow-up-right small"></i></a>
+            <div class="small text-muted text-truncate">${l.descripcion ? esc(l.descripcion) + ' · ' : ''}${esc(dominio(l.url))}</div></div>
+          <button class="btn btn-sm btn-light" title="Copiar link" data-act="link-copiar" data-url="${esc(l.url)}"><i class="bi bi-clipboard"></i></button>
+          ${d.puedeEditar ? `<button class="btn btn-sm btn-light" data-act="link-editar" data-id="${esc(l.id)}"><i class="bi bi-pencil"></i></button>` : ''}
+        </div>`).join('')}</div></div>`).join('') : empty('link-45deg', d.links.length ? 'No hay links que coincidan.' : 'Todavía no hay links cargados.')}
+      ${d.puedeAsignar ? `<div class="card mt-4"><div class="card-header"><i class="bi bi-key me-1"></i>¿Quién más puede ver el banco de links?</div><div class="card-body">
+        <div class="small text-muted mb-3">Pastores, Pastores Principales y Administración lo ven siempre. Acá podés darle acceso a otras personas, para <b>ver</b> o para <b>ver y editar</b>.</div>
+        <div class="row g-2 align-items-start mb-3">
+          <div class="col-md-6"><div id="lk-persona"></div></div>
+          <div class="col-7 col-md-3"><select class="form-select" id="lk-nivel"><option value="VER">Solo ver</option><option value="EDITAR">Ver y editar</option></select></div>
+          <div class="col-5 col-md-3"><button class="btn btn-outline-primary w-100" data-act="link-permiso"><i class="bi bi-person-check me-1"></i>Dar acceso</button></div>
+        </div>
+        ${d.permisos.length ? d.permisos.map(p => `<div class="person"><span class="avatar">${esc(initials(p.nombre || p.email))}</span>
+          <div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(p.nombre || p.email)}</div><div class="small text-muted text-truncate">${esc(p.email)}</div></div>
+          <span class="badge ${p.nivel === 'EDITAR' ? 'text-bg-primary' : 'text-bg-light border'}">${p.nivel === 'EDITAR' ? 'Ver y editar' : 'Solo ver'}</span>
+          <button class="btn btn-sm btn-link text-danger p-0" title="Quitar acceso" data-act="link-quitar" data-email="${esc(p.email)}"><i class="bi bi-x-circle"></i></button></div>`).join('')
+          : '<div class="small text-muted">Nadie más tiene acceso por ahora.</div>'}
+      </div></div>` : ''}`;
+    $('#lk-q').addEventListener('input', e => { S.linksQ = e.target.value; const pos = e.target.selectionStart; renderLinks(); const i = $('#lk-q'); i.focus(); i.setSelectionRange(pos, pos); });
+    if (d.puedeAsignar) S.linkPicker = personPicker($('#lk-persona'), { multiple: false, placeholder: 'Buscar persona o agregar nombre + correo…' });
+  }
+  function abrirLink(l) {
+    $('#form-link').reset();
+    $('#l-titulo-modal').textContent = l ? 'Editar link' : 'Nuevo link';
+    $('#l-id').value = l ? l.id : '';
+    $('#dl-categorias').innerHTML = [...new Set(S.links.links.map(x => x.categoria).concat(['Prédicas', 'Formularios', 'Música', 'Documentos', 'Redes']))].map(c => `<option value="${esc(c)}">`).join('');
+    if (l) { $('#l-titulo').value = l.titulo; $('#l-url').value = l.url; $('#l-categoria').value = l.categoria; $('#l-descripcion').value = l.descripcion; }
+    const pie = $('#modal-link .modal-footer'), b = $('[data-act="link-borrar"]', pie);
+    if (b) b.remove();
+    if (l) pie.insertAdjacentHTML('afterbegin', `<button type="button" class="btn btn-outline-danger me-auto" data-act="link-borrar" data-id="${esc(l.id)}"><i class="bi bi-trash"></i></button>`);
+    bootstrap.Modal.getOrCreateInstance('#modal-link').show();
+  }
+  async function guardarLink(e) {
+    e.preventDefault();
+    const payload = { id: $('#l-id').value, titulo: $('#l-titulo').value.trim(), url: $('#l-url').value.trim(), categoria: $('#l-categoria').value.trim(), descripcion: $('#l-descripcion').value.trim() };
+    if (!payload.titulo) return toast('Escribí un título.', 'warning');
+    if (!/^https?:\/\//i.test(payload.url)) return toast('El link tiene que empezar con http:// o https://', 'warning');
+    const btn = $('#l-guardar');
+    busy(btn, true, 'Guardando…');
+    try { await api('guardarLink', payload); bootstrap.Modal.getInstance('#modal-link').hide(); toast('Link guardado.'); cargarLinks(); }
+    catch (err) { toast(err.message, 'danger'); }
+    busy(btn, false);
+  }
+  async function permisoLink(email, nivel, nombre) {
+    try { await api('permisoLinks', { email, nivel, nombre }); toast(nivel ? 'Acceso otorgado. Le avisamos por correo.' : 'Acceso quitado.'); cargarLinks(); }
+    catch (err) { toast(err.message, 'danger'); }
   }
 
   /* ------------------------------ EXPORTAR E IMPRIMIR ------------------------------ */
@@ -2149,7 +2377,7 @@
       }
       if (ev.permisos.editar) acciones.push(`<button class="btn btn-primary" data-act="editar" data-id="${esc(ev.id)}"><i class="bi bi-pencil me-1"></i>${ev.estado === 'RECHAZADO' ? 'Editar y reenviar' : 'Editar'}</button>`);
       if (ev.permisos.cancelar && !ev.pasado) acciones.push(`<button class="btn btn-outline-secondary" data-act="cancelar" data-id="${esc(ev.id)}"><i class="bi bi-slash-circle me-1"></i>Cancelar evento</button>`);
-      if (ev.permisos.planificar && !ev.pasado && ev.participantes.length) acciones.push(`<button class="btn btn-outline-success" data-act="avisar-wa" data-id="${esc(ev.id)}"><i class="bi bi-whatsapp me-1"></i>Avisar al equipo</button>`);
+      if (ev.permisos.planificar && !ev.pasado && personasAviso(ev).length) acciones.push(`<button class="btn btn-outline-success" data-act="avisar-wa" data-id="${esc(ev.id)}"><i class="bi bi-whatsapp me-1"></i>Avisar al equipo</button>`);
       if (ev.estado === 'APROBADO' && !ev.pasado) acciones.push(`<a class="btn btn-light" href="${esc(gcalLink(ev))}" target="_blank" rel="noopener"><i class="bi bi-calendar-plus me-1"></i>Agregar a mi Calendar</a>`);
 
       cont.innerHTML = `
@@ -2168,6 +2396,9 @@
             <div class="info-item"><div class="lbl">Tipo de reunión</div>${esc(tipoTexto(ev))}</div>
             <div class="info-item"><div class="lbl">Fecha</div>${esc(fmtFecha(ev.inicio))}${mismoDia(ev.inicio, ev.fin) ? '' : ' → ' + esc(fmtFecha(ev.fin))}</div>
             <div class="info-item"><div class="lbl">Horario</div>${esc(fmtHora(ev.inicio))} a ${esc(fmtHora(ev.fin))} hs</div>
+            ${ev.predicador ? `<div class="info-item"><div class="lbl">Predica</div>${esc(ev.predicador.nombre)}${waBtn(waDe(ev.predicador.email), ev.predicador.nombre)}</div>` : ''}
+            ${ev.santaCena ? `<div class="info-item"><div class="lbl">🍞 Santa Cena</div>${ev.reflexion ? 'Reflexión: ' + esc(ev.reflexion.nombre) + waBtn(waDe(ev.reflexion.email), ev.reflexion.nombre) : '<span class="text-warning">Falta asignar quién comparte la reflexión</span>'}</div>` : ''}
+            ${ev.serieId ? '<div class="info-item"><div class="lbl">Evento fijo</div><i class="bi bi-arrow-repeat me-1"></i>Se repite cada semana. Los cambios acá afectan solo esta fecha.</div>' : ''}
             <div class="info-item"><div class="lbl">Ubicación</div>${esc(ev.ubicacionTexto)}${ev.ubicacionTipo === 'EXTERNA' ? ` <a href="${esc(mapsLink(ev.direccion))}" target="_blank" rel="noopener" class="small">Abrir en Maps <i class="bi bi-box-arrow-up-right"></i></a>` : ''}</div>
           </div>
           ${ev.descripcion ? `<div class="mb-4"><div class="info-item"><div class="lbl">Descripción</div></div><div style="white-space:pre-wrap">${esc(ev.descripcion)}</div></div>` : ''}
@@ -2285,7 +2516,7 @@
         <div class="small fw-semibold mb-2"><i class="bi bi-person-plus me-1"></i>Agregar persona nueva</div>
         <div class="row g-2">
           <div class="col-sm-5"><input class="form-control form-control-sm pp-nombre" maxlength="100" placeholder="Nombre y apellido"></div>
-          <div class="col-sm-5"><input type="email" class="form-control form-control-sm pp-email" placeholder="correo@ejemplo.com"></div>
+          <div class="col-sm-5"><input type="email" class="form-control form-control-sm pp-email" placeholder="${opts.emailOpcional ? 'correo (opcional)' : 'correo@ejemplo.com'}"></div>
           <div class="col-sm-2 d-flex gap-1"><button type="button" class="btn btn-sm btn-primary flex-fill pp-ok">Agregar</button><button type="button" class="btn btn-sm btn-light pp-cancel" title="Cancelar">&times;</button></div>
         </div>
       </div></div>`;
@@ -2300,19 +2531,21 @@
     const add = p => {
       if (!p) return;
       const v = { email: String(p.email || '').trim().toLowerCase(), nombre: String(p.nombre || '').trim() };
-      if (!isEmail(v.email)) return toast('Correo inválido: ' + v.email, 'warning');
+      // emailOpcional: se acepta solo el nombre (p. ej. un predicador invitado sin correo).
+      if (!isEmail(v.email) && !(opts.emailOpcional && !v.email && v.nombre)) return toast('Correo inválido: ' + v.email, 'warning');
       if (!opts.multiple) values = [];
-      const ya = values.find(x => x.email === v.email);
+      const ya = values.find(x => v.email ? x.email === v.email : (!x.email && x.nombre === v.nombre));
       if (ya) { if (v.nombre) ya.nombre = v.nombre; } else values.push(v);
-      if (!dir().some(x => x.email === v.email)) dir().push({ email: v.email, nombre: v.nombre, areas: [] });
+      if (v.email && !dir().some(x => x.email === v.email)) dir().push({ email: v.email, nombre: v.nombre, areas: [] });
       input.value = '';
       cerrar();
       render();
     };
     const abrir = () => {
       const q = input.value.trim().toLowerCase();
+      const pref = p => opts.preferirArea && p.areas.includes(opts.preferirArea) ? 1 : 0;
       const res = dir().filter(p => !values.some(v => v.email === p.email) && (!q || (p.nombre + ' ' + p.email).toLowerCase().includes(q)))
-        .sort((a, b) => (a.nombre || a.email).localeCompare(b.nombre || b.email)).slice(0, 8);
+        .sort((a, b) => pref(b) - pref(a) || (a.nombre || a.email).localeCompare(b.nombre || b.email)).slice(0, 8);
       menu.innerHTML = res.map(p => `<button type="button" class="dropdown-item" data-email="${esc(p.email)}">
           <div class="fw-semibold small text-truncate">${esc(p.nombre || p.email)}</div>
           <div class="small text-muted text-truncate">${esc(p.email)}${p.areas.length ? ' · ' + esc(p.areas.join(', ')) : ''}</div></button>`).join('') +
@@ -2331,7 +2564,7 @@
     const confirmarNuevo = () => {
       const n = $('.pp-nombre', nuevo).value.trim(), e = $('.pp-email', nuevo).value.trim().toLowerCase();
       if (!n) { $('.pp-nombre', nuevo).focus(); return toast('Ingresá el nombre de la persona.', 'warning'); }
-      if (!isEmail(e)) { $('.pp-email', nuevo).focus(); return toast('Ingresá un correo válido.', 'warning'); }
+      if (e ? !isEmail(e) : !opts.emailOpcional) { $('.pp-email', nuevo).focus(); return toast('Ingresá un correo válido.', 'warning'); }
       add({ email: e, nombre: n });
       nuevo.classList.add('d-none');
       $('.pp-nombre', nuevo).value = ''; $('.pp-email', nuevo).value = '';
@@ -2379,8 +2612,8 @@
     if (ev && !deps.includes(ev.departamento)) deps.unshift(ev.departamento);
     $('#f-departamento').innerHTML = (deps.length > 1 ? '<option value="">Seleccioná…</option>' : '') + deps.map(d => `<option>${esc(d)}</option>`).join('');
     const aviso = $('#f-aviso-aprob');
-    aviso.classList.toggle('d-none', !!(ev && ev.estado === 'APROBADO' && u.isSuper));
-    if (ev && ev.estado === 'APROBADO' && !u.isSuper) aviso.querySelector('div').innerHTML = 'Este evento ya está aprobado. Si cambiás <b>fecha, lugar, título, área o presupuesto</b>, volverá a revisión pastoral y se quitará temporalmente del calendario.';
+    aviso.classList.toggle('d-none', !!(ev && ev.estado === 'APROBADO' && (u.canApprove || (ev.serieId && u.canSeries))));
+    if (ev && ev.estado === 'APROBADO' && !u.canApprove && !(ev.serieId && u.canSeries)) aviso.querySelector('div').innerHTML = 'Este evento ya está aprobado. Si cambiás <b>fecha, lugar, título, área o presupuesto</b>, volverá a revisión pastoral y se quitará temporalmente del calendario.';
     else aviso.querySelector('div').innerHTML = 'El evento quedará <b>pendiente de aprobación pastoral</b>. Se publicará en el calendario oficial cuando lo apruebe un Pastor Principal.';
 
     if (ev) {
@@ -2411,6 +2644,11 @@
     S.chips.col = personPicker($('#chips-colaboradores'));
     S.chips.enc.set(ev ? ev.participantes.filter(p => p.rol === 'ENCARGADO') : [{ email: u.email, nombre: u.nombre }]);
     S.chips.col.set(ev ? ev.participantes.filter(p => p.rol === 'COLABORADOR') : []);
+    S.chips.pred = personPicker($('#f-predicador'), { multiple: false, emailOpcional: true, preferirArea: 'Predicadores', placeholder: 'Buscar o agregar predicador/a…' });
+    S.chips.pred.set(ev && ev.predicador ? [ev.predicador] : []);
+    S.chips.refl = personPicker($('#f-reflexion'), { multiple: false, emailOpcional: true, preferirArea: 'Predicadores', placeholder: 'Buscar o agregar…' });
+    S.chips.refl.set(ev && ev.reflexion ? [ev.reflexion] : []);
+    $('#f-santacena').checked = !!(ev && ev.santaCena);
     $('#map-preview').innerHTML = '';
     $('#f-conflictos').innerHTML = '';
     actualizarFormulario();
@@ -2426,6 +2664,7 @@
     $('#wrap-direccion').classList.toggle('d-none', !ext);
     $('#wrap-presupuesto').classList.toggle('d-none', !$('#f-presupuesto').checked);
     $('#wrap-inscripcion').classList.toggle('d-none', !$('#f-inscripcion').checked);
+    $('#wrap-reflexion').classList.toggle('d-none', !$('#f-santacena').checked);
   }
 
   function verMapa() {
@@ -2478,6 +2717,7 @@
       obsPresupuesto: $('#f-obs-presupuesto').value.trim(),
       inscripcion: $('#f-inscripcion').checked, cupo: $('#f-cupo').value, costoInscripcion: $('#f-costo-insc').value,
       cierreInscripcion: $('#f-cierre-insc').value, infoInscripcion: $('#f-info-insc').value.trim(),
+      predicador: S.chips.pred.get()[0] || null, santaCena: $('#f-santacena').checked, reflexion: S.chips.refl.get()[0] || null,
       encargados: S.chips.enc.get(),
       colaboradores: S.chips.col.get()
     };
@@ -2524,6 +2764,35 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
+      case 'fijo-nuevo': abrirFijo(null); break;
+      case 'fijo-editar': abrirFijo(S.fijos.series.find(s => s.id === id)); break;
+      case 'fijos-generar':
+        busy(el, true, 'Creando…');
+        try { const r = await api('generarFijos'); toast(r.creadas ? `Se crearon ${r.creadas} fecha(s).` : 'Las fechas ya estaban completas.', r.creadas ? 'success' : 'info'); S.eventos = null; cargarFijos(); }
+        catch (err) { toast(err.message, 'danger'); busy(el, false); }
+        break;
+      case 'link-nuevo': abrirLink(null); break;
+      case 'link-editar': abrirLink(S.links.links.find(l => l.id === id)); break;
+      case 'link-borrar': {
+        bootstrap.Modal.getInstance('#modal-link').hide();
+        const l = S.links.links.find(x => x.id === id);
+        if (await ask({ title: 'Borrar link', message: `¿Borrar <b>${esc(l ? l.titulo : '')}</b>?`, input: false, okText: 'Borrar', okClass: 'btn-danger' })) {
+          try { await api('borrarLink', { id }); toast('Link borrado.'); cargarLinks(); } catch (err) { toast(err.message, 'danger'); }
+        }
+        break;
+      }
+      case 'link-copiar':
+        try { await navigator.clipboard.writeText(el.dataset.url); toast('Link copiado.'); } catch (e) { window.prompt('Copiá el link:', el.dataset.url); }
+        break;
+      case 'link-permiso': {
+        const p = S.linkPicker && S.linkPicker.get()[0];
+        if (!p || !p.email) { toast('Elegí una persona (con correo).', 'warning'); break; }
+        permisoLink(p.email, $('#lk-nivel').value, p.nombre);
+        break;
+      }
+      case 'link-quitar':
+        if (await ask({ title: 'Quitar acceso', message: `¿Quitarle el acceso al banco de links a <b>${esc(el.dataset.email)}</b>?`, input: false, okText: 'Quitar', okClass: 'btn-danger' })) permisoLink(el.dataset.email, '');
+        break;
       case 'area-nueva': abrirArea(null); break;
       case 'area-editar': abrirArea(el.dataset.nombre); break;
       case 'inscripciones': abrirInscripciones(id); break;
@@ -2581,12 +2850,15 @@
   $('#login-codigo').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 6); if (e.target.value.length === 6) $('#form-codigo').requestSubmit(); });
 
   $('#form-evento').addEventListener('submit', guardarEvento);
-  ['#f-tipo', '#f-presupuesto', '#f-inscripcion', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', actualizarFormulario));
+  ['#f-tipo', '#f-presupuesto', '#f-inscripcion', '#f-santacena', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', actualizarFormulario));
   // Sugerir inscripción para los tipos que suelen tenerla.
   $('#f-tipo').addEventListener('change', () => {
     if (!$('#f-id').value && /Retiro|Campamento|Convención|Capacitaciones/.test($('#f-tipo').value)) { $('#f-inscripcion').checked = true; actualizarFormulario(); }
   });
   $('#form-area').addEventListener('submit', guardarArea);
+  $('#form-serie').addEventListener('submit', guardarFijo);
+  $('#form-link').addEventListener('submit', guardarLink);
+  $('#s-ubic').addEventListener('change', ubicFijo);
   $('#form-inscripto').addEventListener('submit', guardarInscripto);
   ['#f-inicio', '#f-fin', '#f-espacio', '#f-ubic-iglesia', '#f-ubic-externa'].forEach(s => $(s).addEventListener('change', chequearConflictos));
   $('#f-inicio').addEventListener('change', () => {
