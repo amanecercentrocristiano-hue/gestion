@@ -255,6 +255,7 @@
       <section id="v-tesoreria" class="view d-none"></section>
       <section id="v-asignaciones" class="view d-none"></section>
       <section id="v-tareas" class="view d-none"></section>
+      <section id="v-whatsapp" class="view d-none"></section>
       <section id="v-proyecto" class="view d-none"></section>
       <section id="v-equipos" class="view d-none"></section>
       <section id="v-bitacora" class="view d-none"></section>
@@ -395,6 +396,16 @@
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="t-guardar"><i class="bi bi-save me-1"></i>Guardar paso</button></div>
       </form>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: AVISAR POR WHATSAPP ======================= -->
+  <div class="modal fade" id="modal-wa" tabindex="-1">
+    <div class="modal-dialog modal-dialog-scrollable modal-lg modal-fullscreen-sm-down">
+      <div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title fw-bold"><i class="bi bi-whatsapp text-success me-1"></i><span id="wa-titulo">Avisar por WhatsApp</span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body" id="wa-body"></div>
+      </div>
     </div>
   </div>
 
@@ -731,6 +742,7 @@
       ['eventos', 'calendar3', 'Agenda', true],
       ['asignaciones', 'person-check', 'Mis asignaciones', true, c.asignaciones],
       ['tareas', 'list-check', 'Mis tareas', true, c.tareas],
+      ['whatsapp', 'whatsapp', 'Avisos WhatsApp', u.organiza],
       ['aprobaciones', 'patch-check', 'Aprobaciones', u.isSuper, c.aprobaciones],
       ['tesoreria', 'cash-coin', 'Tesorería', u.isTesoreria, c.tesoreria],
       ['equipos', 'people', 'Equipos', u.canManageTeams],
@@ -758,7 +770,7 @@
   const LOADERS = {
     inicio: cargarInicio, eventos: cargarEventos, aprobaciones: cargarAprobaciones, tesoreria: cargarTesoreria,
     asignaciones: cargarAsignaciones, equipos: cargarEquipos, bitacora: cargarBitacora, config: cargarConfig,
-    tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId)
+    tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa
   };
   function go(view) {
     if (view !== 'proyecto' && S.view !== 'proyecto') S.vistaPrevia = view;
@@ -1430,6 +1442,88 @@
   }
   function waDe(email) { const p = ((S.boot && S.boot.directorio) || []).find(x => x.email === email); return p ? p.wa : ''; }
 
+  /* ---------- Avisos semiautomáticos: la app arma el mensaje, la persona toca Enviar ---------- */
+  function urlApp() { return (S.boot && S.boot.urlApp) || location.href.split('?')[0]; }
+  function hoyYmd() { const d = new Date(), z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
+  function claveWa(key) { return 'wa:' + hoyYmd() + ':' + key; }
+  function primerNombre(n) { return String(n || '').trim().split(/\s+/)[0] || ''; }
+  function cuandoTexto(dias) { return dias === 0 ? 'HOY' : dias === 1 ? 'MAÑANA' : dias > 1 ? `en ${dias} días` : `hace ${-dias} día${dias === -1 ? '' : 's'}`; }
+
+  function msgEvento(ev, p) {
+    const pend = p.rol === 'COLABORADOR' && p.estado === 'PENDIENTE';
+    return `¡Hola ${primerNombre(p.nombre)}! 👋\nTe recordamos: *${ev.titulo}* (${ev.departamento})` +
+      (ev.diasFaltan != null ? ` es *${cuandoTexto(ev.diasFaltan)}*` : '') + `.\n` +
+      `📅 ${fmtFecha(ev.inicio)}, de ${fmtHora(ev.inicio)} a ${fmtHora(ev.fin)} hs\n📍 ${ev.ubicacion || ev.ubicacionTexto}\n` +
+      `🙋 Tu lugar: ${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}\n` +
+      (pend ? `¿Nos confirmás tu participación? Podés hacerlo acá: ${urlApp()}?evento=${ev.id}\n` : `Detalles: ${urlApp()}?evento=${ev.id}\n`) +
+      `¡Gracias por servir! 🙏 Centro Cristiano Amanecer`;
+  }
+  function msgTarea(t) {
+    const d = t.dias;
+    return `¡Hola ${primerNombre(t.responsable.nombre)}! 👋\nTe recordamos el paso *${t.titulo}* del plan de *${t.evento.titulo}*.\n` +
+      `⏰ Plazo: ${fmtYmd(t.fechaLimite)} — ${d < 0 ? `venció ${cuandoTexto(d)}` : `vence ${cuandoTexto(d)}`}.\n` +
+      `Cuando lo completes, marcalo en la app: ${urlApp()}?proyecto=${t.evento.id}\n¡Gracias! 🙏 Centro Cristiano Amanecer`;
+  }
+  function filaWa(key, nombre, wa, texto, sub) {
+    const enviado = !!store.get(claveWa(key));
+    return `<div class="person">
+      <span class="avatar">${esc(initials(nombre || '?'))}</span>
+      <div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(nombre || 'Sin nombre')}</div><div class="small text-muted text-truncate">${sub}</div></div>
+      ${wa ? `<a class="btn btn-sm ${enviado ? 'btn-outline-secondary' : 'btn-success'} text-nowrap" target="_blank" rel="noopener" href="${esc(waLink(wa, texto))}" data-act="wa-enviado" data-key="${esc(key)}">
+          <i class="bi ${enviado ? 'bi-check2-all' : 'bi-whatsapp'} me-1"></i>${enviado ? 'Enviado' : 'Enviar'}</a>`
+        : '<span class="badge text-bg-light border text-wrap" title="No cargó su celular o no aceptó compartirlo">Sin WhatsApp</span>'}
+    </div>`;
+  }
+  function marcarWaEnviado(el) {
+    store.set(claveWa(el.dataset.key), '1');
+    el.classList.replace('btn-success', 'btn-outline-secondary');
+    el.innerHTML = '<i class="bi bi-check2-all me-1"></i>Enviado';
+  }
+
+  async function cargarAvisosWa() {
+    const el = $('#v-whatsapp');
+    cargando(el);
+    try {
+      const d = await api('avisosWhatsapp');
+      S.boot.urlApp = d.urlApp || S.boot.urlApp;
+      const sinWa = [].concat(...d.eventos.map(e => e.personas)).concat(d.tareas.map(t => t.responsable)).filter(p => !p.wa).length;
+      el.innerHTML = `
+        <div class="mb-3"><h2 class="page-title"><i class="bi bi-whatsapp text-success me-1"></i>Avisos por WhatsApp</h2>
+        <div class="text-muted small">Los mensajes ya vienen escritos: tocá <b>Enviar</b>, se abre WhatsApp y solo tenés que mandarlo. Los que ya enviaste hoy quedan marcados (en este dispositivo). Los correos automáticos se siguen enviando igual.</div></div>
+        ${sinWa ? `<div class="alert alert-warning small"><i class="bi bi-info-circle me-1"></i>${sinWa} persona(s) no tienen WhatsApp cargado o no aceptaron compartirlo. Pediles que completen <b>Mi perfil</b>.</div>` : ''}
+        <div class="card mb-4"><div class="card-header"><i class="bi bi-calendar-event me-1"></i>Eventos próximos (${d.eventos.length})</div><div class="card-body">
+          ${d.eventos.length ? d.eventos.map(ev => `
+            <div class="mb-3">
+              <div class="d-flex flex-wrap justify-content-between gap-2 mb-1">
+                <a href="#" class="fw-semibold" data-act="ver" data-id="${esc(ev.id)}">${esc(ev.titulo)}</a>
+                <span class="badge ${ev.diasFaltan <= 1 ? 'text-bg-warning' : 'text-bg-light border'}">${esc(cuandoTexto(ev.diasFaltan))} · ${esc(fmtCorta(ev.inicio))}</span>
+              </div>
+              ${ev.personas.length ? ev.personas.map(p => filaWa('ev:' + ev.id + ':' + p.email, p.nombre || p.email, p.wa, msgEvento(ev, p),
+                `${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : '<div class="small text-muted">Sin equipo asignado.</div>'}
+            </div>`).join('<hr>') : empty('calendar-check', 'No hay eventos aprobados en los próximos días.')}
+        </div></div>
+        <div class="card"><div class="card-header"><i class="bi bi-list-check me-1"></i>Pasos con plazo cercano o vencido (${d.tareas.length})</div><div class="card-body">
+          ${d.tareas.length ? d.tareas.map(t => filaWa('ta:' + t.id, t.responsable.nombre || t.responsable.email, t.responsable.wa, msgTarea(t),
+            `<span class="${t.dias < 0 ? 'due-late' : t.dias <= 1 ? 'due-soon' : ''}">${esc(t.titulo)} · ${t.dias < 0 ? 'venció ' : 'vence '}${esc(cuandoTexto(t.dias).toLowerCase())}</span> · ${esc(t.evento.titulo)}`)).join('')
+            : empty('emoji-smile', 'No hay pasos por vencer.')}
+        </div></div>`;
+    } catch (err) { errorEn(el, err); }
+  }
+
+  /** Desde el detalle de un evento: avisar a todo su equipo. */
+  async function avisarEquipoWa(ev) {
+    await cerrarDetalle();
+    const p0 = parseIso(ev.inicio), hoy = new Date();
+    const dias = p0 ? Math.round((new Date(p0.y, p0.m - 1, p0.d) - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000) : null;
+    const evMsg = Object.assign({}, ev, { diasFaltan: dias != null && dias >= 0 ? dias : null });
+    const personas = ev.participantes.filter(p => p.estado !== 'RECHAZADO');
+    $('#wa-titulo').textContent = 'Avisar al equipo: ' + ev.titulo;
+    $('#wa-body').innerHTML = `<div class="small text-muted mb-3">Tocá <b>Enviar</b> en cada persona: se abre WhatsApp con el mensaje listo (fecha, horario, lugar y enlace).</div>` +
+      (personas.length ? personas.map(p => filaWa('ev:' + ev.id + ':' + p.email, p.nombre || p.email, waDe(p.email), msgEvento(evMsg, p),
+        `${p.rol === 'ENCARGADO' ? 'Encargado/a' : 'Colaborador/a'}${p.estado === 'PENDIENTE' ? ' · sin confirmar' : ''}`)).join('') : empty('people', 'Este evento no tiene equipo asignado.'));
+    bootstrap.Modal.getOrCreateInstance('#modal-wa').show();
+  }
+
   async function abrirPerfil(email) {
     showLoader(true);
     try {
@@ -1609,6 +1703,7 @@
       }
       if (ev.permisos.editar) acciones.push(`<button class="btn btn-primary" data-act="editar" data-id="${esc(ev.id)}"><i class="bi bi-pencil me-1"></i>${ev.estado === 'RECHAZADO' ? 'Editar y reenviar' : 'Editar'}</button>`);
       if (ev.permisos.cancelar && !ev.pasado) acciones.push(`<button class="btn btn-outline-secondary" data-act="cancelar" data-id="${esc(ev.id)}"><i class="bi bi-slash-circle me-1"></i>Cancelar evento</button>`);
+      if (ev.permisos.planificar && !ev.pasado && ev.participantes.length) acciones.push(`<button class="btn btn-outline-success" data-act="avisar-wa" data-id="${esc(ev.id)}"><i class="bi bi-whatsapp me-1"></i>Avisar al equipo</button>`);
       if (ev.estado === 'APROBADO' && !ev.pasado) acciones.push(`<a class="btn btn-light" href="${esc(gcalLink(ev))}" target="_blank" rel="noopener"><i class="bi bi-calendar-plus me-1"></i>Agregar a mi Calendar</a>`);
 
       cont.innerHTML = `
@@ -1965,6 +2060,8 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
+      case 'avisar-wa': avisarEquipoWa(S.detalle); break;
+      case 'wa-enviado': marcarWaEnviado(el); break;
       case 'mi-perfil': abrirPerfil(null); break;
       case 'ver-perfil': verPerfil(el.dataset.email); break;
       case 'editar-perfil': await cerrarDetalle(); abrirPerfil(el.dataset.email); break;
