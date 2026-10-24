@@ -393,10 +393,17 @@
               <label class="form-check-label fw-semibold" for="f-inscripcion">Este evento tiene inscripción (retiro, campamento, convención…)</label>
             </div>
             <div class="row g-3 mb-3 d-none" id="wrap-inscripcion">
-              <div class="col-6 col-md-3"><label class="form-label">Cupo</label><input type="number" min="0" step="1" class="form-control" id="f-cupo" placeholder="0 = sin límite"></div>
-              <div class="col-6 col-md-4"><label class="form-label">Costo por persona</label><div class="input-group"><span class="input-group-text">$</span><input type="number" min="0" step="0.01" class="form-control" id="f-costo-insc" placeholder="0 = gratis"></div></div>
-              <div class="col-md-5"><label class="form-label">Cierre de inscripción</label><input type="date" class="form-control" id="f-cierre-insc"></div>
+              <div class="col-6 col-md-4"><label class="form-label">Cupo</label><input type="number" min="0" step="1" class="form-control" id="f-cupo" placeholder="0 = sin límite"></div>
+              <div class="col-6 col-md-4"><label class="form-label">Cierre de inscripción</label><input type="date" class="form-control" id="f-cierre-insc"></div>
               <div class="col-12"><label class="form-label">Información para los inscriptos</label><textarea class="form-control" id="f-info-insc" rows="2" maxlength="1500" placeholder="Qué traer, horario de salida, datos para transferir…"></textarea></div>
+              <div class="col-12"><label class="form-label fw-semibold mb-0">💲 Inversión</label>
+                <div class="small text-muted mb-2">Dejalo vacío si es gratis. Podés ofrecer varias opciones, por ejemplo <i>en cuotas</i> o <i>pago único al día del evento</i>.</div>
+                <div id="f-opciones"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-act="op-add"><i class="bi bi-plus-lg me-1"></i>Agregar opción de inversión</button></div>
+              <div class="col-12"><label class="form-label fw-semibold mb-0">Preguntas extra para la ficha <span class="text-muted small fw-normal">(opcional)</span></label>
+                <div class="small text-muted mb-2">Ej.: DNI, talle de remera, ¿necesitás traslado?</div>
+                <div id="f-preguntas"></div>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-act="preg-add"><i class="bi bi-plus-lg me-1"></i>Agregar pregunta</button></div>
               <div class="col-12 small text-muted"><i class="bi bi-link-45deg me-1"></i>Cuando el evento esté aprobado, vas a tener un enlace para que la gente se anote sola, sin necesidad de cuenta.</div>
             </div>
           </div>
@@ -550,6 +557,8 @@
             <div class="col-md-2"><label class="form-label">Edad</label><input type="number" min="0" max="120" class="form-control" id="i-edad"></div>
             <div class="col-md-4"><label class="form-label">Estado</label><select class="form-select" id="i-estado"></select></div>
             <div class="col-12"><label class="form-label">Observaciones (salud, alergias, comidas…)</label><textarea class="form-control" id="i-observaciones" rows="2" maxlength="1000"></textarea></div>
+            <div class="col-12"><div class="row g-3" id="i-preguntas"></div></div>
+            <div class="col-12" id="i-opcion-wrap"><label class="form-label">Opción de inversión</label><select class="form-select" id="i-opcion"></select></div>
             <div class="col-md-4"><label class="form-label">Monto pagado</label><div class="input-group"><span class="input-group-text">$</span><input type="number" min="0" step="0.01" class="form-control" id="i-monto"></div><div class="form-text" id="i-monto-ayuda"></div></div>
             <div class="col-md-4"><label class="form-label">Forma de pago</label><select class="form-select" id="i-forma"></select></div>
             <div class="col-md-4"><label class="form-label">Notas internas</label><input class="form-control" id="i-notas" maxlength="1000"></div>
@@ -2064,11 +2073,44 @@
 
   /* ------------------------------ INSCRIPCIONES ------------------------------ */
   const EST_INSC = { CONFIRMADA: ['Confirmada', 'success'], ESPERA: ['Lista de espera', 'warning'], CANCELADA: ['Cancelada', 'secondary'] };
-  function estadoPago(i, costo) {
-    if (!costo) return i.montoPagado ? ['Pagó ' + fmtMonto(i.montoPagado), 'success'] : ['Gratis', 'light'];
-    if (i.montoPagado >= costo) return ['Pagado', 'success'];
-    if (i.montoPagado > 0) return ['Parcial ' + fmtMonto(i.montoPagado), 'warning'];
-    return ['Debe ' + fmtMonto(costo), 'danger'];
+  /* Inversión: opciones {nombre, total, cuotas, nota}. */
+  function opTexto(o) {
+    return `${o.nombre}: ${fmtMonto(o.total)}${o.cuotas > 1 ? ` (${o.cuotas} cuotas de ${fmtMonto(o.total / o.cuotas)})` : ''}${o.nota ? ' – ' + o.nota : ''}`;
+  }
+  function inversionTexto(cfg) { return cfg && cfg.opciones && cfg.opciones.length ? cfg.opciones.map(opTexto).join(' · ') : 'Sin costo'; }
+  function filaOpcion(o) {
+    o = o || { nombre: '', total: '', cuotas: 1, nota: '' };
+    return `<div class="row g-2 mb-2 op-fila align-items-center">
+      <div class="col-12 col-md-4"><input class="form-control form-control-sm" data-f="nombre" maxlength="60" placeholder="Ej.: En 6 cuotas" value="${esc(o.nombre)}"></div>
+      <div class="col-5 col-md-3"><div class="input-group input-group-sm"><span class="input-group-text">$</span><input type="number" min="0" step="0.01" class="form-control" data-f="total" placeholder="Total" value="${esc(o.total)}"></div></div>
+      <div class="col-4 col-md-2"><div class="input-group input-group-sm"><input type="number" min="1" max="24" class="form-control" data-f="cuotas" value="${esc(o.cuotas || 1)}"><span class="input-group-text">cuotas</span></div></div>
+      <div class="col-3 col-md-1 text-end"><button type="button" class="btn btn-sm btn-link text-danger p-0" data-act="op-del" title="Quitar"><i class="bi bi-x-lg"></i></button></div>
+      <div class="col-12 col-md-8"><input class="form-control form-control-sm" data-f="nota" maxlength="150" placeholder="Nota (ej.: abonando hasta el día del retiro)" value="${esc(o.nota)}"></div>
+      <div class="col-12 col-md-4 small text-muted op-calc"></div>
+    </div>`;
+  }
+  function calcOpciones() {
+    $$('#f-opciones .op-fila').forEach(r => {
+      const t = Number($('[data-f="total"]', r).value) || 0, c = Math.max(1, Number($('[data-f="cuotas"]', r).value) || 1);
+      $('.op-calc', r).textContent = t && c > 1 ? `= ${c} cuotas de ${fmtMonto(t / c)}` : '';
+    });
+  }
+  function filaPregunta(q) {
+    return `<div class="input-group input-group-sm mb-2"><input class="form-control" maxlength="120" placeholder="Ej.: DNI" value="${esc(q || '')}">
+      <button type="button" class="btn btn-outline-danger" data-act="preg-del" title="Quitar"><i class="bi bi-x-lg"></i></button></div>`;
+  }
+  function opcionDe(i, cfg) { return (cfg.opciones || []).find(o => o.nombre === i.opcion) || (cfg.opciones && cfg.opciones.length === 1 ? cfg.opciones[0] : null); }
+  function totalDe(i, cfg) { if (i.total != null) return i.total; const o = opcionDe(i, cfg); return o ? o.total : (cfg.costo || 0); }
+  function cuotasDe(i, cfg) {
+    const o = opcionDe(i, cfg);
+    if (!o || o.cuotas <= 1 || !o.total) return null;
+    return { pagas: Math.min(o.cuotas, Math.floor((i.montoPagado + 0.01) / (o.total / o.cuotas))), de: o.cuotas };
+  }
+  function estadoPago(i, total) {
+    if (!total) return i.montoPagado ? ['Pagó ' + fmtMonto(i.montoPagado), 'success'] : ['Sin costo', 'light'];
+    if (i.montoPagado >= total) return ['Pagado', 'success'];
+    if (i.montoPagado > 0) return ['Pagó ' + fmtMonto(i.montoPagado) + ' · saldo ' + fmtMonto(total - i.montoPagado), 'warning'];
+    return ['Debe ' + fmtMonto(total), 'danger'];
   }
   function abrirInscripciones(id) {
     S.inscEventoId = id;
@@ -2081,16 +2123,16 @@
     try { S.insc = await api('inscripciones', { eventoId: id }); renderInscripciones(); } catch (err) { errorEn(el, err); }
   }
   function renderInscripciones() {
-    const d = S.insc, ev = d.evento, cfg = ev.inscripcion || { cupo: 0, costo: 0 };
+    const d = S.insc, ev = d.evento, cfg = ev.inscripcion || { cupo: 0, costo: 0, opciones: [], preguntas: [] };
     const q = (S.inscQ || '').toLowerCase(), filtro = S.inscFiltro || '';
     const activas = d.inscripciones.filter(i => i.estado !== 'CANCELADA');
     const conf = d.inscripciones.filter(i => i.estado === 'CONFIRMADA').length;
     const espera = d.inscripciones.filter(i => i.estado === 'ESPERA').length;
     const recaudado = activas.reduce((s, i) => s + i.montoPagado, 0);
-    const esperado = cfg.costo * activas.length;
-    const deben = cfg.costo ? activas.filter(i => i.montoPagado < cfg.costo).length : 0;
+    const esperado = activas.reduce((s, i) => s + totalDe(i, cfg), 0);
+    const deben = activas.filter(i => i.montoPagado < totalDe(i, cfg)).length;
     const lista = d.inscripciones.filter(i => (!q || [i.nombre, i.email, i.telefono, i.observaciones].join(' ').toLowerCase().includes(q)) &&
-      (!filtro || (filtro === 'DEBE' ? cfg.costo && i.estado !== 'CANCELADA' && i.montoPagado < cfg.costo : i.estado === filtro)));
+      (!filtro || (filtro === 'DEBE' ? i.estado !== 'CANCELADA' && i.montoPagado < totalDe(i, cfg) : i.estado === filtro)));
     $('#v-inscripciones').innerHTML = `
       <button class="btn btn-link px-0 mb-2" data-act="volver"><i class="bi bi-arrow-left me-1"></i>Volver</button>
       <div class="card overflow-hidden mb-4">
@@ -2100,11 +2142,12 @@
           <div class="small opacity-75">${esc(fmtFecha(ev.inicio))} · ${esc(fmtRango(ev))} · ${esc(ev.ubicacionTexto)}</div>
         </div>
         <div class="card-body">
+          <div class="small mb-2"><b>💲 Inversión:</b> ${esc(inversionTexto(cfg))}</div>
           ${cfg.cupo ? `<div class="d-flex justify-content-between small mb-1"><span>Cupo</span><b>${conf} / ${cfg.cupo}</b></div>${barra(Math.round(conf * 100 / cfg.cupo), true)}` : ''}
           <div class="d-flex flex-wrap gap-2 mt-3">
             <div class="stat-chip"><b class="text-success">${conf}</b>Confirmados</div>
             ${espera ? `<div class="stat-chip"><b class="text-warning">${espera}</b>En espera</div>` : ''}
-            ${cfg.costo ? `<div class="stat-chip"><b>${fmtMonto(recaudado)}</b>Recaudado de ${fmtMonto(esperado)}</div><div class="stat-chip"><b class="${deben ? 'text-danger' : ''}">${deben}</b>Con pago pendiente</div>` : '<div class="stat-chip"><b>Gratis</b>Sin costo</div>'}
+            ${esperado ? `<div class="stat-chip"><b>${fmtMonto(recaudado)}</b>Recaudado de ${fmtMonto(esperado)}</div><div class="stat-chip"><b class="${deben ? 'text-danger' : ''}">${deben}</b>Con pago pendiente</div>` : '<div class="stat-chip"><b>Sin costo</b>Inversión</div>'}
           </div>
           <div class="mt-3 p-2 rounded bg-light small d-flex flex-wrap align-items-center gap-2">
             <i class="bi bi-link-45deg"></i>
@@ -2118,7 +2161,7 @@
       <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
         <input class="form-control" style="max-width:240px" id="in-q" placeholder="Buscar inscripto…" value="${esc(S.inscQ || '')}">
         <select class="form-select" style="max-width:200px" id="in-filtro">
-          ${[['', 'Todos'], ['CONFIRMADA', 'Confirmados'], ['ESPERA', 'Lista de espera'], ['CANCELADA', 'Cancelados']].concat(cfg.costo ? [['DEBE', 'Con pago pendiente']] : []).map(([v, t]) => `<option value="${v}" ${filtro === v ? 'selected' : ''}>${t}</option>`).join('')}
+          ${[['', 'Todos'], ['CONFIRMADA', 'Confirmados'], ['ESPERA', 'Lista de espera'], ['CANCELADA', 'Cancelados']].concat(esperado ? [['DEBE', 'Con pago pendiente']] : []).map(([v, t]) => `<option value="${v}" ${filtro === v ? 'selected' : ''}>${t}</option>`).join('')}
         </select>
         <div class="ms-auto d-flex flex-wrap gap-2">
           <button class="btn btn-outline-secondary" data-act="insc-csv"><i class="bi bi-filetype-csv me-1"></i>Excel</button>
@@ -2128,7 +2171,7 @@
       </div>
       <div class="card"><div class="card-body py-1">
         ${lista.length ? lista.map((i, n) => {
-          const est = EST_INSC[i.estado] || EST_INSC.CONFIRMADA, pago = estadoPago(i, cfg.costo);
+          const est = EST_INSC[i.estado] || EST_INSC.CONFIRMADA, pago = estadoPago(i, totalDe(i, cfg)), cuo = cuotasDe(i, cfg);
           return `<div class="person">
             <span class="avatar">${n + 1}</span>
             <div class="flex-grow-1 min-w-0">
@@ -2137,7 +2180,10 @@
               <div class="d-flex flex-wrap gap-1 mt-1">
                 <span class="badge text-bg-${est[1]}">${est[0]}</span>
                 <span class="badge text-bg-${pago[1]} ${pago[1] === 'light' ? 'border' : ''}">${esc(pago[0])}</span>
+                ${i.opcion ? `<span class="badge text-bg-light border">${esc(i.opcion)}</span>` : ''}
+                ${cuo ? `<span class="badge text-bg-info">${cuo.pagas}/${cuo.de} cuotas</span>` : ''}
               </div>
+              ${Object.keys(i.respuestas || {}).length ? `<div class="small text-muted mt-1">${Object.keys(i.respuestas).map(k => `<b>${esc(k)}:</b> ${esc(i.respuestas[k])}`).join(' · ')}</div>` : ''}
             </div>
             <button class="btn btn-sm btn-light" data-act="insc-editar" data-id="${esc(i.id)}"><i class="bi bi-pencil"></i></button>
           </div>`;
@@ -2146,33 +2192,50 @@
     $('#in-q').addEventListener('input', e => { S.inscQ = e.target.value; const pos = e.target.selectionStart; renderInscripciones(); const i = $('#in-q'); i.focus(); i.setSelectionRange(pos, pos); });
     $('#in-filtro').addEventListener('change', e => { S.inscFiltro = e.target.value; renderInscripciones(); });
     const comp = $('#insc-compartir'); // sin número: WhatsApp deja elegir el chat o grupo
-    if (comp) comp.href = 'https://wa.me/?text=' + encodeURIComponent(`📣 *${ev.titulo}*\n📅 ${fmtFecha(ev.inicio)}, ${fmtHora(ev.inicio)} hs\n📍 ${ev.ubicacionTexto}\n${cfg.costo ? '💲 ' + fmtMonto(cfg.costo) + '\n' : ''}¡Anotate acá! 👉 ${d.enlace}`);
+    if (comp) comp.href = 'https://wa.me/?text=' + encodeURIComponent(`📣 *${ev.titulo}*\n📅 ${fmtFecha(ev.inicio)}, ${fmtHora(ev.inicio)} hs\n📍 ${ev.ubicacionTexto}\n${cfg.opciones && cfg.opciones.length ? '💲 Inversión: ' + inversionTexto(cfg) + '\n' : ''}¡Anotate acá! 👉 ${d.enlace}`);
   }
   function abrirInscripto(i) {
-    const d = S.insc, cfg = d.evento.inscripcion || { costo: 0 };
+    const d = S.insc, cfg = d.evento.inscripcion || { costo: 0, opciones: [], preguntas: [] };
     $('#form-inscripto').reset();
     $('#i-titulo').textContent = i ? 'Editar inscripción' : 'Nueva inscripción';
     $('#i-id').value = i ? i.id : '';
     $('#i-estado').innerHTML = (i ? '' : '<option value="">Automático (según cupo)</option>') + Object.keys(d.estados).map(k => `<option value="${k}">${esc(d.estados[k])}</option>`).join('');
     $('#i-forma').innerHTML = '<option value="">—</option>' + d.formasPago.map(f => `<option>${esc(f)}</option>`).join('');
+    $('#i-opcion-wrap').classList.toggle('d-none', !cfg.opciones.length);
+    $('#i-opcion').innerHTML = (cfg.opciones.length > 1 ? '<option value="">Elegí…</option>' : '') + cfg.opciones.map(o => `<option value="${esc(o.nombre)}">${esc(opTexto(o))}</option>`).join('');
+    $('#i-preguntas').innerHTML = cfg.preguntas.map((q, n) => `<div class="col-md-6"><label class="form-label">${esc(q)}</label><input class="form-control" data-pregunta="${esc(q)}" maxlength="300"></div>`).join('');
     if (i) {
       $('#i-nombre').value = i.nombre; $('#i-telefono').value = i.telefono; $('#i-email').value = i.email; $('#i-edad').value = i.edad;
       $('#i-estado').value = i.estado; $('#i-observaciones').value = i.observaciones; $('#i-monto').value = i.montoPagado || '';
       $('#i-forma').value = i.formaPago; $('#i-notas').value = i.notas;
+      if (i.opcion) $('#i-opcion').value = i.opcion;
+      $$('#i-preguntas [data-pregunta]').forEach(inp => { inp.value = (i.respuestas || {})[inp.dataset.pregunta] || ''; });
     }
-    $('#i-monto-ayuda').textContent = cfg.costo ? 'Costo: ' + fmtMonto(cfg.costo) : 'Evento sin costo';
+    ayudaMonto();
     const pie = $('#modal-inscripto .modal-footer');
     const borrar = $('[data-act="insc-borrar"]', pie);
     if (borrar) borrar.remove();
     if (i) pie.insertAdjacentHTML('afterbegin', `<button type="button" class="btn btn-outline-danger me-auto" data-act="insc-borrar" data-id="${esc(i.id)}"><i class="bi bi-trash"></i></button>`);
     bootstrap.Modal.getOrCreateInstance('#modal-inscripto').show();
   }
+  function ayudaMonto() {
+    const cfg = S.insc.evento.inscripcion || { opciones: [] };
+    const o = cfg.opciones.find(x => x.nombre === $('#i-opcion').value);
+    const pagado = Number($('#i-monto').value) || 0;
+    if (!o) { $('#i-monto-ayuda').textContent = cfg.opciones.length ? 'Elegí la opción de inversión' : 'Evento sin costo'; return; }
+    const cuota = o.cuotas > 1 ? o.total / o.cuotas : 0;
+    $('#i-monto-ayuda').textContent = `Total ${fmtMonto(o.total)}` + (cuota ? ` · ${Math.min(o.cuotas, Math.floor((pagado + 0.01) / cuota))}/${o.cuotas} cuotas` : '') +
+      (pagado < o.total ? ` · saldo ${fmtMonto(o.total - pagado)}` : ' · ✔ completo');
+  }
   async function guardarInscripto(e) {
     e.preventDefault();
+    const respuestas = {};
+    $$('#i-preguntas [data-pregunta]').forEach(inp => { if (inp.value.trim()) respuestas[inp.dataset.pregunta] = inp.value.trim(); });
     const payload = {
       id: $('#i-id').value, eventoId: S.insc.evento.id, nombre: $('#i-nombre').value.trim(), telefono: $('#i-telefono').value.trim(),
       email: $('#i-email').value.trim(), edad: $('#i-edad').value, estado: $('#i-estado').value, observaciones: $('#i-observaciones').value.trim(),
-      montoPagado: $('#i-monto').value, formaPago: $('#i-forma').value, notas: $('#i-notas').value.trim()
+      montoPagado: $('#i-monto').value, formaPago: $('#i-forma').value, notas: $('#i-notas').value.trim(),
+      opcion: $('#i-opcion').value, respuestas
     };
     if (payload.nombre.length < 3) return toast('Ingresá nombre y apellido.', 'warning');
     const btn = $('#i-guardar');
@@ -2194,10 +2257,16 @@
     try { await api('borrarInscripcion', { id }); toast('Inscripción borrada.'); cargarInscripciones(S.inscEventoId, true); } catch (err) { toast(err.message, 'danger'); }
   }
   function filasInscriptos(conPagos) {
-    const cfg = S.insc.evento.inscripcion || { costo: 0 };
-    const cab = ['#', 'Nombre', 'Edad', 'Celular', 'Correo', 'Estado', 'Observaciones'].concat(conPagos ? ['Pagado', 'Forma de pago', 'Situación'] : []).concat(['Notas']);
-    return [cab].concat(S.insc.inscripciones.map((i, n) => [n + 1, i.nombre, i.edad, i.telefono, i.email, (EST_INSC[i.estado] || [''])[0], i.observaciones]
-      .concat(conPagos ? [i.montoPagado, i.formaPago, estadoPago(i, cfg.costo)[0]] : []).concat([i.notas])));
+    const cfg = S.insc.evento.inscripcion || { costo: 0, opciones: [], preguntas: [] };
+    const cab = ['#', 'Nombre', 'Edad', 'Celular', 'Correo', 'Estado', 'Observaciones'].concat(cfg.preguntas)
+      .concat(conPagos ? ['Opción de inversión', 'Total', 'Pagado', 'Saldo', 'Cuotas', 'Forma de pago'] : []).concat(['Notas']);
+    return [cab].concat(S.insc.inscripciones.map((i, n) => {
+      const total = totalDe(i, cfg), cuo = cuotasDe(i, cfg);
+      return [n + 1, i.nombre, i.edad, i.telefono, i.email, (EST_INSC[i.estado] || [''])[0], i.observaciones]
+        .concat(cfg.preguntas.map(q => (i.respuestas || {})[q] || ''))
+        .concat(conPagos ? [i.opcion, total, i.montoPagado, Math.max(0, total - i.montoPagado), cuo ? cuo.pagas + '/' + cuo.de : '', i.formaPago] : [])
+        .concat([i.notas]);
+    }));
   }
 
   /* ------------------------------ INSCRIPCIÓN PÚBLICA ------------------------------ */
@@ -2214,7 +2283,7 @@
         <div class="info-grid small mb-3">
           <div class="info-item"><div class="lbl">Cuándo</div>${esc(fmtFecha(ev.inicio))}<br>${esc(fmtRango(ev))}</div>
           <div class="info-item"><div class="lbl">Dónde</div>${esc(ev.ubicacion)}</div>
-          ${ev.costo ? `<div class="info-item"><div class="lbl">Costo</div>${esc(fmtMonto(ev.costo))}</div>` : ''}
+
           ${ev.cierre ? `<div class="info-item"><div class="lbl">Inscripción hasta</div>${esc(fmtYmd(ev.cierre))}</div>` : ''}
         </div>
         ${ev.info ? `<div class="alert alert-light border small" style="white-space:pre-wrap">${esc(ev.info)}</div>` : ''}`;
@@ -2229,6 +2298,12 @@
           </div>
           <div class="mb-3"><label class="form-label">Correo <span class="text-muted small">(para recibir la confirmación)</span></label><input type="email" class="form-control" id="pu-email" autocomplete="email"></div>
           <div class="mb-3"><label class="form-label">¿Algo que debamos saber? <span class="text-muted small">(alergias, comidas, salud)</span></label><textarea class="form-control" id="pu-obs" rows="2" maxlength="1000"></textarea></div>
+          ${ev.preguntas.map((q, n) => `<div class="mb-3"><label class="form-label">${esc(q)}</label><input class="form-control" id="pu-q-${n}" maxlength="300"></div>`).join('')}
+          ${ev.opciones.length ? `<div class="mb-3"><label class="form-label">💲 Inversión ${ev.opciones.length > 1 ? '* <span class="text-muted small">(elegí una opción)</span>' : ''}</label>
+            ${ev.opciones.map((o, n) => `<label class="svc-tile mb-2" for="pu-op-${n}" style="height:auto">
+              <input class="form-check-input ms-0 me-1" style="margin-left:0" type="radio" name="pu-op" id="pu-op-${n}" value="${n}" ${ev.opciones.length === 1 ? 'checked' : ''}>
+              <span><b>${esc(o.nombre)}</b> · ${esc(fmtMonto(o.total))}${o.cuotas > 1 ? ` <span class="text-muted">(${o.cuotas} cuotas de ${esc(fmtMonto(o.total / o.cuotas))})</span>` : ''}${o.nota ? `<br><span class="small text-muted">${esc(o.nota)}</span>` : ''}</span>
+            </label>`).join('')}</div>` : ''}
           <input type="text" id="pu-web" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
           <button class="btn btn-primary btn-lg w-100" type="submit"><i class="bi bi-check2-circle me-1"></i>Inscribirme</button>
           <div id="pu-error" class="alert alert-danger small mt-3 d-none"></div>
@@ -2236,11 +2311,15 @@
       $('#form-publico').addEventListener('submit', async e => {
         e.preventDefault();
         const datos = { nombre: $('#pu-nombre').value.trim(), telefono: $('#pu-telefono').value.trim(), edad: $('#pu-edad').value, email: $('#pu-email').value.trim(), observaciones: $('#pu-obs').value.trim(), web: $('#pu-web').value };
+        const opSel = $('input[name="pu-op"]:checked');
+        datos.opcion = opSel ? opSel.value : '';
+        datos.respuestas = ev.preguntas.map((q, n) => $('#pu-q-' + n).value.trim());
         const err = $('#pu-error');
         const falla = m => { err.textContent = m; err.classList.remove('d-none'); };
         if (datos.nombre.length < 3) return falla('Ingresá tu nombre y apellido.');
         if (datos.telefono.replace(/\D/g, '').length < 8) return falla('Ingresá tu celular con característica.');
         if (datos.email && !isEmail(datos.email)) return falla('El correo no es válido.');
+        if (ev.opciones.length > 1 && datos.opcion === '') return falla('Elegí una opción de inversión.');
         const btn = $('#form-publico button[type=submit]');
         busy(btn, true, 'Enviando…');
         try {
@@ -2416,7 +2495,7 @@
             </div>
             ${ev.inscripcion.cupo ? `${barra(Math.round(ev.inscripcion.confirmados * 100 / ev.inscripcion.cupo))}<div class="small text-muted mt-1">${ev.inscripcion.confirmados} de ${ev.inscripcion.cupo} lugares${ev.inscripcion.espera ? ` · ${ev.inscripcion.espera} en espera` : ''}</div>`
               : `<div class="small text-muted">${ev.inscripcion.confirmados} inscripto(s), sin límite de cupo</div>`}
-            <div class="small text-muted">${ev.inscripcion.costo ? 'Costo: ' + fmtMonto(ev.inscripcion.costo) + (ev.inscripcion.recaudado != null ? ' · Recaudado: ' + fmtMonto(ev.inscripcion.recaudado) : '') : 'Sin costo'}${ev.inscripcion.cierre ? ' · Cierra: ' + esc(fmtYmd(ev.inscripcion.cierre)) : ''}</div>
+            <div class="small text-muted">💲 Inversión: ${esc(inversionTexto(ev.inscripcion))}${ev.inscripcion.recaudado ? ' · Recaudado: ' + fmtMonto(ev.inscripcion.recaudado) : ''}${ev.inscripcion.cierre ? ' · Cierra: ' + esc(fmtYmd(ev.inscripcion.cierre)) : ''}</div>
           </div></div>` : ''}
           ${ev.progreso.total || ev.permisos.planificar ? `<div class="card bg-light mb-4"><div class="card-body py-3">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
@@ -2634,7 +2713,6 @@
       const ins = ev.inscripcion;
       $('#f-inscripcion').checked = !!ins;
       $('#f-cupo').value = ins && ins.cupo ? ins.cupo : '';
-      $('#f-costo-insc').value = ins && ins.costo ? ins.costo : '';
       $('#f-cierre-insc').value = ins ? ins.cierre : '';
       $('#f-info-insc').value = ins ? ins.info : '';
     } else if (deps.length === 1) {
@@ -2644,6 +2722,9 @@
     S.chips.col = personPicker($('#chips-colaboradores'));
     S.chips.enc.set(ev ? ev.participantes.filter(p => p.rol === 'ENCARGADO') : [{ email: u.email, nombre: u.nombre }]);
     S.chips.col.set(ev ? ev.participantes.filter(p => p.rol === 'COLABORADOR') : []);
+    const insc = ev && ev.inscripcion;
+    $('#f-opciones').innerHTML = (insc ? insc.opciones : []).map(filaOpcion).join('');
+    $('#f-preguntas').innerHTML = (insc ? insc.preguntas : []).map(filaPregunta).join('');
     S.chips.pred = personPicker($('#f-predicador'), { multiple: false, emailOpcional: true, preferirArea: 'Predicadores', placeholder: 'Buscar o agregar predicador/a…' });
     S.chips.pred.set(ev && ev.predicador ? [ev.predicador] : []);
     S.chips.refl = personPicker($('#f-reflexion'), { multiple: false, emailOpcional: true, preferirArea: 'Predicadores', placeholder: 'Buscar o agregar…' });
@@ -2715,7 +2796,10 @@
       requierePresupuesto: $('#f-presupuesto').checked,
       monto: $('#f-monto').value,
       obsPresupuesto: $('#f-obs-presupuesto').value.trim(),
-      inscripcion: $('#f-inscripcion').checked, cupo: $('#f-cupo').value, costoInscripcion: $('#f-costo-insc').value,
+      inscripcion: $('#f-inscripcion').checked, cupo: $('#f-cupo').value,
+      opcionesInversion: $$('#f-opciones .op-fila').map(r => ({ nombre: $('[data-f="nombre"]', r).value.trim(), total: $('[data-f="total"]', r).value, cuotas: $('[data-f="cuotas"]', r).value, nota: $('[data-f="nota"]', r).value.trim() }))
+        .filter(o => o.nombre || Number(o.total)),
+      preguntasInscripcion: $$('#f-preguntas input').map(i => i.value.trim()).filter(Boolean),
       cierreInscripcion: $('#f-cierre-insc').value, infoInscripcion: $('#f-info-insc').value.trim(),
       predicador: S.chips.pred.get()[0] || null, santaCena: $('#f-santacena').checked, reflexion: S.chips.refl.get()[0] || null,
       encargados: S.chips.enc.get(),
@@ -2764,6 +2848,10 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
+      case 'op-add': $('#f-opciones').insertAdjacentHTML('beforeend', filaOpcion(null)); break;
+      case 'op-del': el.closest('.op-fila').remove(); break;
+      case 'preg-add': $('#f-preguntas').insertAdjacentHTML('beforeend', filaPregunta('')); $('#f-preguntas .input-group:last-child input').focus(); break;
+      case 'preg-del': el.closest('.input-group').remove(); break;
       case 'fijo-nuevo': abrirFijo(null); break;
       case 'fijo-editar': abrirFijo(S.fijos.series.find(s => s.id === id)); break;
       case 'fijos-generar':
@@ -2857,6 +2945,8 @@
   });
   $('#form-area').addEventListener('submit', guardarArea);
   $('#form-serie').addEventListener('submit', guardarFijo);
+  $('#f-opciones').addEventListener('input', calcOpciones);
+  ['#i-opcion', '#i-monto'].forEach(s => $(s).addEventListener('input', ayudaMonto));
   $('#form-link').addEventListener('submit', guardarLink);
   $('#s-ubic').addEventListener('change', ubicFijo);
   $('#form-inscripto').addEventListener('submit', guardarInscripto);
