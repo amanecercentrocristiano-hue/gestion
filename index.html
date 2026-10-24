@@ -396,15 +396,23 @@
 
   <!-- ======================= MODAL: MIEMBRO ======================= -->
   <div class="modal fade" id="modal-miembro" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
       <form class="modal-content" id="form-miembro" novalidate>
-        <div class="modal-header"><h5 class="modal-title fw-bold">Asignar persona a un área</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-header"><h5 class="modal-title fw-bold" id="m-titulo">Agregar persona</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
         <div class="modal-body">
-          <div class="mb-3"><label class="form-label">Correo electrónico *</label><input type="email" class="form-control" id="m-email" list="dl-personas" required></div>
-          <div class="mb-3"><label class="form-label">Nombre y apellido *</label><input class="form-control" id="m-nombre" maxlength="100" required></div>
-          <div class="mb-3"><label class="form-label">Rol *</label><select class="form-select" id="m-rol"></select></div>
-          <div class="mb-1"><label class="form-label">Departamento / Ministerio *</label><select class="form-select" id="m-dep"></select></div>
-          <div class="form-text" id="m-ayuda">La persona recibirá un correo de bienvenida con el enlace a la aplicación.</div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6"><label class="form-label">Correo electrónico *</label><input type="email" class="form-control" id="m-email" list="dl-personas" required></div>
+            <div class="col-md-6"><label class="form-label">Nombre y apellido *</label><input class="form-control" id="m-nombre" maxlength="100" required></div>
+          </div>
+          <div class="mb-3" id="m-cargos-wrap">
+            <label class="form-label d-block">Cargos <span class="text-muted small">(títulos, no dan permisos)</span></label>
+            <div id="m-cargos" class="d-flex flex-wrap gap-3"></div>
+          </div>
+          <label class="form-label">Áreas y roles *</label>
+          <div id="m-asignaciones"></div>
+          <button type="button" class="btn btn-sm btn-outline-primary mt-1" data-act="m-add"><i class="bi bi-plus-lg me-1"></i>Agregar otra área</button>
+          <div class="small text-muted mt-2" id="m-otras"></div>
+          <div class="form-text" id="m-ayuda">Si se suman áreas nuevas, la persona recibe un correo con el enlace a la aplicación.</div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary" id="m-guardar">Guardar</button></div>
       </form>
@@ -643,7 +651,8 @@
     $('#u-nombre').textContent = u.nombre;
     $('#u-rol').textContent = u.rolLabel;
     $('#u-email').textContent = u.email;
-    const areas = [].concat(u.encargadoDe.map(a => 'Encargado/a: ' + a), u.colaboradorDe.map(a => 'Colaborador/a: ' + a));
+    const areas = [].concat(u.cargos && u.cargos.length ? ['Cargo: ' + u.cargos.join(', ')] : [],
+      u.encargadoDe.map(a => 'Encargado/a: ' + a), u.colaboradorDe.map(a => 'Colaborador/a: ' + a));
     $('#u-areas').innerHTML = areas.length ? areas.map(esc).join('<br>') : esc(u.rolLabel);
     aplicarLogo();
     construirNav();
@@ -918,19 +927,22 @@
     const d = S.miembros, u = S.boot.user;
     const dep = filtro !== undefined ? filtro : ($('#eq-dep') ? $('#eq-dep').value : '');
     const q = $('#eq-q') ? $('#eq-q').value.trim().toLowerCase() : '';
+    const cargo = $('#eq-cargo') ? $('#eq-cargo').value : '';
+    const editables = new Set(d.miembros.filter(m => m.editable).map(m => m.email));
     const orden = { SUPERADMIN: 0, ADMIN: 1, PASTOR: 2, ENCARGADO: 3, COLABORADOR: 4 };
     const grupos = (u.isAdmin ? d.departamentos : u.encargadoDe).filter(x => !dep || x === dep);
     const html = grupos.map(g => {
-      const ms = d.miembros.filter(m => m.departamento === g && (!q || (m.nombre + ' ' + m.email).toLowerCase().includes(q)))
+      const ms = d.miembros.filter(m => m.departamento === g && (!q || (m.nombre + ' ' + m.email).toLowerCase().includes(q)) && (!cargo || m.cargos.includes(cargo)))
         .sort((a, b) => orden[a.rol] - orden[b.rol] || a.nombre.localeCompare(b.nombre));
-      if (q && !ms.length) return '';
+      if ((q || cargo) && !ms.length) return '';
       return `<div class="col-md-6 col-xl-4"><div class="card h-100"><div class="card-header d-flex justify-content-between align-items-center">
         <span class="text-truncate">${esc(g)}</span><span class="badge rounded-pill text-bg-light">${ms.length}</span></div>
         <div class="card-body py-2">${ms.length ? ms.map(m => {
           const puedeQuitar = u.isAdmin || (m.rol === 'COLABORADOR' && u.encargadoDe.includes(m.departamento));
           return `<div class="person"><span class="avatar">${esc(initials(m.nombre))}</span>
-            <div class="flex-grow-1 min-w-0"><div class="text-truncate fw-semibold small">${esc(m.nombre)}</div><div class="text-truncate small text-muted">${esc(m.email)}</div></div>
+            <div class="flex-grow-1 min-w-0"><div class="text-truncate fw-semibold small">${esc(m.nombre)}${m.cargos.map(k => ` <span class="badge rounded-pill text-bg-warning fw-normal">${esc(d.cargos[k])}</span>`).join('')}</div><div class="text-truncate small text-muted">${esc(m.email)}${(() => { const n = new Set(d.miembros.filter(x => x.email === m.email).map(x => x.departamento)).size; return n > 1 ? ` · ${n} áreas` : ''; })()}</div></div>
             <span class="badge ${m.rol === 'COLABORADOR' ? 'text-bg-light' : 'text-bg-primary'}">${esc(d.rolLabels[m.rol])}</span>
+            ${editables.has(m.email) ? `<button class="btn btn-sm btn-link p-0 ms-1" title="Editar áreas y cargos" data-act="editar-persona" data-email="${esc(m.email)}"><i class="bi bi-pencil"></i></button>` : ''}
             ${puedeQuitar ? `<button class="btn btn-sm btn-link text-danger p-0 ms-1" title="Quitar" data-act="quitar-miembro" data-email="${esc(m.email)}" data-rol="${esc(m.rol)}" data-dep="${esc(m.departamento)}"><i class="bi bi-person-dash"></i></button>` : ''}
           </div>`;
         }).join('') : '<div class="text-muted small py-2">Sin personas asignadas.</div>'}</div></div></div>`;
@@ -940,52 +952,70 @@
       el.innerHTML = `
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : 'Asigná colaboradores a tus áreas por correo electrónico.'}</div></div>
-          <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Asignar persona</button>
+          <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Agregar persona</button>
         </div>
         <div class="row g-2 mb-3"><div class="col-md-5"><input class="form-control" id="eq-q" placeholder="Buscar persona…"></div>
-        <div class="col-md-4"><select class="form-select" id="eq-dep"><option value="">Todas mis áreas</option>${(u.isAdmin ? d.departamentos : u.encargadoDe).map(x => `<option>${esc(x)}</option>`).join('')}</select></div></div>
+        <div class="col-6 col-md-4"><select class="form-select" id="eq-dep"><option value="">Todas mis áreas</option>${(u.isAdmin ? d.departamentos : u.encargadoDe).map(x => `<option>${esc(x)}</option>`).join('')}</select></div>
+        <div class="col-6 col-md-3"><select class="form-select" id="eq-cargo"><option value="">Todos los cargos</option>${Object.keys(d.cargos).map(k => `<option value="${k}">${esc({ DIACONO: 'Diáconos', OBRERO: 'Obreros' }[k] || d.cargos[k])}</option>`).join('')}</select></div></div>
         <div class="row g-3" id="eq-grid"></div>`;
       $('#eq-q').addEventListener('input', () => renderEquipos());
       $('#eq-dep').addEventListener('change', () => renderEquipos());
+      $('#eq-cargo').addEventListener('change', () => renderEquipos());
     }
     $('#eq-grid').innerHTML = html || `<div class="col-12">${empty('people', 'No se encontraron personas.')}</div>`;
   }
-  function abrirMiembro() {
-    const d = S.miembros;
-    $('#form-miembro').reset();
-    $('#m-rol').innerHTML = d.roles.map(r => `<option value="${r}" ${r === 'COLABORADOR' ? 'selected' : ''}>${esc(d.rolLabels[r])}</option>`).join('');
-    const deps = S.boot.user.isAdmin ? d.departamentos : S.boot.user.encargadoDe;
-    $('#m-dep').innerHTML = deps.map(x => `<option>${esc(x)}</option>`).join('');
-    const sel = $('#eq-dep') && $('#eq-dep').value;
-    if (sel) $('#m-dep').value = sel;
-    actualizarRolMiembro();
-    bootstrap.Modal.getOrCreateInstance('#modal-miembro').show();
+  const AYUDA_ROL = {
+    SUPERADMIN: 'Pastor/a Principal: acceso total y aprobación de eventos.',
+    ADMIN: 'Administración: gestiona equipos y configuración (no aprueba eventos).',
+    PASTOR: 'Pastor/a: ve toda la agenda y puede crear eventos para cualquier área.',
+    ENCARGADO: 'Encargado/a: crea y edita eventos del área y asigna colaboradores.',
+    COLABORADOR: 'Colaborador/a: ve los eventos aprobados de su área, recibe asignaciones y recordatorios.'
+  };
+  function filaAsignacion(a) {
+    const d = S.miembros, u = S.boot.user;
+    const deps = u.isAdmin ? d.departamentos : u.encargadoDe;
+    const pastoral = a.rol === 'SUPERADMIN' || a.rol === 'PASTOR';
+    const dep = pastoral ? 'Pastores' : a.departamento;
+    return `<div class="row g-2 mb-2 asig align-items-center">
+      <div class="col-5"><select class="form-select form-select-sm" data-f="rol" title="${esc(AYUDA_ROL[a.rol] || '')}">${d.roles.map(r => `<option value="${r}" ${r === a.rol ? 'selected' : ''}>${esc(d.rolLabels[r])}</option>`).join('')}</select></div>
+      <div class="col-6"><select class="form-select form-select-sm" data-f="dep" ${pastoral ? 'disabled' : ''}>${deps.map(x => `<option ${x === dep ? 'selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+      <div class="col-1 text-end"><button type="button" class="btn btn-sm btn-link text-danger p-0" data-act="m-del" title="Quitar esta área"><i class="bi bi-x-lg"></i></button></div>
+    </div>`;
   }
-  function actualizarRolMiembro() {
-    const r = $('#m-rol').value;
-    const pastoral = r === 'SUPERADMIN' || r === 'PASTOR';
-    if (pastoral) $('#m-dep').value = 'Pastores';
-    $('#m-dep').disabled = pastoral;
-    const ayudas = {
-      SUPERADMIN: 'Pastor/a Principal: acceso total y aprobación de eventos.',
-      ADMIN: 'Administración: gestiona equipos y configuración (no aprueba eventos).',
-      PASTOR: 'Pastor/a: ve toda la agenda y puede crear eventos para cualquier área.',
-      ENCARGADO: 'Encargado/a: crea y edita eventos del área y asigna colaboradores.',
-      COLABORADOR: 'Colaborador/a: recibe asignaciones, invitaciones y recordatorios.'
-    };
-    $('#m-ayuda').textContent = (ayudas[r] || '') + ' Recibirá un correo de bienvenida.';
+  function abrirMiembro(email) {
+    const d = S.miembros, u = S.boot.user;
+    const filas = email ? d.miembros.filter(m => m.email === email) : [];
+    const propias = filas.filter(m => m.editable), ajenas = filas.filter(m => !m.editable);
+    if (!filas.length) $('#form-miembro').reset();
+    $('#m-titulo').textContent = filas.length ? 'Editar persona' : 'Agregar persona';
+    $('#m-email').value = email || '';
+    $('#m-email').readOnly = filas.length > 0;
+    if (filas.length) $('#m-nombre').value = filas[0].nombre;
+    const cargos = filas.length ? filas[0].cargos : [];
+    $('#m-cargos-wrap').classList.toggle('d-none', !d.puedeCargos);
+    $('#m-cargos').innerHTML = Object.keys(d.cargos).map(k => `<div class="form-check"><input class="form-check-input" type="checkbox" id="m-cargo-${k}" value="${k}" ${cargos.includes(k) ? 'checked' : ''}><label class="form-check-label" for="m-cargo-${k}">${esc(d.cargos[k])}</label></div>`).join('');
+    const sel = $('#eq-dep') && $('#eq-dep').value;
+    const iniciales = propias.length ? propias : [{ rol: 'COLABORADOR', departamento: sel || (u.isAdmin ? d.departamentos[0] : u.encargadoDe[0]) }];
+    $('#m-asignaciones').innerHTML = iniciales.map(filaAsignacion).join('');
+    $('#m-otras').innerHTML = ajenas.length ? '<i class="bi bi-info-circle me-1"></i>También es: ' + ajenas.map(m => `${esc(d.rolLabels[m.rol])} en ${esc(m.departamento)}`).join(' · ') : '';
+    bootstrap.Modal.getOrCreateInstance('#modal-miembro').show();
   }
   async function guardarMiembro(e) {
     e.preventDefault();
     const btn = $('#m-guardar');
-    const payload = { email: $('#m-email').value.trim().toLowerCase(), nombre: $('#m-nombre').value.trim(), rol: $('#m-rol').value, departamento: $('#m-dep').value };
+    const payload = {
+      email: $('#m-email').value.trim().toLowerCase(), nombre: $('#m-nombre').value.trim(),
+      cargos: $$('#m-cargos input:checked').map(i => i.value),
+      asignaciones: $$('#m-asignaciones .asig').map(r => ({ rol: $('[data-f="rol"]', r).value, departamento: $('[data-f="dep"]', r).value }))
+    };
     if (!isEmail(payload.email)) return toast('Ingresá un correo válido.', 'warning');
     if (!payload.nombre) return toast('Ingresá el nombre.', 'warning');
+    if (!payload.asignaciones.length && !$('#m-otras').textContent) return toast('Agregá al menos un área con su rol.', 'warning');
     busy(btn, true, 'Guardando…');
     try {
-      await api('guardarMiembro', payload);
+      const r = await api('guardarPersona', payload);
       bootstrap.Modal.getInstance('#modal-miembro').hide();
-      toast('Persona asignada correctamente.');
+      toast('Persona guardada' + (r.agregadas ? ` · ${r.agregadas} área(s) nueva(s)` : '') + (r.quitadas ? ` · ${r.quitadas} quitada(s)` : '') + '.');
       S.boot = await api('bootstrap');
       llenarSelectsFijos();
       construirNav();
@@ -1668,7 +1698,14 @@
       case 'aprobar': case 'rechazar': case 'cancelar': case 'visto': case 'observar': case 'aceptar': case 'declinar':
         e.stopPropagation(); accionEvento(act, id); break;
       case 'ver-mapa': verMapa(); break;
-      case 'nuevo-miembro': abrirMiembro(); break;
+      case 'nuevo-miembro': abrirMiembro(null); break;
+      case 'editar-persona': abrirMiembro(el.dataset.email); break;
+      case 'm-add': {
+        const u = S.boot.user;
+        $('#m-asignaciones').insertAdjacentHTML('beforeend', filaAsignacion({ rol: 'COLABORADOR', departamento: u.isAdmin ? S.miembros.departamentos[0] : u.encargadoDe[0] }));
+        break;
+      }
+      case 'm-del': el.closest('.asig').remove(); break;
       case 'quitar-miembro': quitarMiembro(el); break;
       case 'regla-add':
         $('#reglas-body').insertAdjacentHTML('beforeend', filaRegla({ condicion: 'TODOS', departamento: S.reglas.departamentos[0], momento: 'CARGA', destinatarios: 'TODOS', activo: true }));
@@ -1704,9 +1741,20 @@
   $('#form-miembro').addEventListener('submit', guardarMiembro);
   $('#form-tarea').addEventListener('submit', guardarTarea);
   $('#t-fecha').addEventListener('change', ayudaFecha);
-  $('#m-rol').addEventListener('change', actualizarRolMiembro);
+  $('#m-asignaciones').addEventListener('change', e => {
+    if (e.target.dataset.f !== 'rol') return;
+    const fila = e.target.closest('.asig'), dep = $('[data-f="dep"]', fila);
+    const pastoral = e.target.value === 'SUPERADMIN' || e.target.value === 'PASTOR';
+    if (pastoral) dep.value = 'Pastores';
+    dep.disabled = pastoral;
+    e.target.title = AYUDA_ROL[e.target.value] || '';
+    $('#m-ayuda').textContent = AYUDA_ROL[e.target.value] || '';
+  });
   $('#m-email').addEventListener('change', () => {
-    const p = (S.boot.directorio || []).find(x => x.email === $('#m-email').value.trim().toLowerCase());
+    const email = $('#m-email').value.trim().toLowerCase();
+    if ($('#m-email').readOnly || !S.miembros) return;
+    if (S.miembros.miembros.some(m => m.email === email)) return abrirMiembro(email); // ya existe: editar sus áreas
+    const p = (S.boot.directorio || []).find(x => x.email === email);
     if (p && !$('#m-nombre').value) $('#m-nombre').value = p.nombre;
   });
   ['#fe-q', '#fe-dep', '#fe-estado', '#fe-cuando', '#fe-mios'].forEach(s => $(s).addEventListener(s === '#fe-q' ? 'input' : 'change', renderEventos));
