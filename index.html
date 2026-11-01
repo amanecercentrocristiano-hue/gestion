@@ -300,6 +300,7 @@
       <section id="v-whatsapp" class="view d-none"></section>
       <section id="v-areas" class="view d-none"></section>
       <section id="v-fijos" class="view d-none"></section>
+      <section id="v-reservas" class="view d-none"></section>
       <section id="v-links" class="view d-none"></section>
       <section id="v-inscripciones" class="view d-none"></section>
       <section id="v-proyecto" class="view d-none"></section>
@@ -696,7 +697,7 @@
     CONFIGURACION: 'Configuración', AVISO_EQUIPO: 'Aviso a equipo', PERFIL: 'Perfil',
     AREA_CREAR: 'Creó área', AREA_EDITAR: 'Editó área', FIJO_CREAR: 'Creó evento fijo', FIJO_EDITAR: 'Editó evento fijo',
     EVENTOS_FIJOS: 'Fechas de eventos fijos', LINK_CREAR: 'Agregó link', LINK_EDITAR: 'Editó link', LINK_BORRAR: 'Borró link',
-    PERMISO_LINKS: 'Permiso banco de links', INSCRIPCION_CREAR: 'Nueva inscripción',
+    PERMISO_LINKS: 'Permiso banco de links', RESERVA_CREAR: 'Reservó espacio', RESERVA_CANCELAR: 'Canceló reserva', INSCRIPCION_CREAR: 'Nueva inscripción',
     INSCRIPCION_EDITAR: 'Editó inscripción', INSCRIPCION_BORRAR: 'Borró inscripción',
     TAREA_CREAR: 'Agregó paso', TAREA_EDITAR: 'Actualizó paso', TAREA_COMPLETAR: 'Completó paso', TAREA_BORRAR: 'Borró paso',
     PLANTILLA: 'Cargó pasos sugeridos', PLAN_COMPLETO: 'Plan completo', RECORDATORIO_TAREA: 'Recordatorio de plazo', SETUP: 'Instalación', ERROR_CORREO: 'Error de correo', CORREO_SIN_CUOTA: 'Sin cuota de correo'
@@ -921,6 +922,7 @@
       ['eventos', 'calendar3', 'Agenda', true],
       ['asignaciones', 'person-check', 'Mis asignaciones', true, c.asignaciones],
       ['tareas', 'list-check', 'Mis tareas', true, c.tareas],
+      ['reservas', 'door-open', 'Reservas', true],
       ['whatsapp', 'whatsapp', 'Avisos WhatsApp', u.organiza],
       ['links', 'link-45deg', 'Banco de links', u.canLinks],
       ['areas', 'diagram-3', 'Áreas', u.canAreas],
@@ -953,7 +955,7 @@
     asignaciones: cargarAsignaciones, equipos: cargarEquipos, bitacora: cargarBitacora, config: cargarConfig,
     tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa,
     areas: cargarAreas, inscripciones: () => cargarInscripciones(S.inscEventoId),
-    fijos: cargarFijos, links: cargarLinks
+    fijos: cargarFijos, links: cargarLinks, reservas: () => cargarReservas()
   };
   function go(view) {
     const sub = v => v === 'proyecto' || v === 'inscripciones'; // pantallas que se abren desde un evento
@@ -1841,6 +1843,107 @@
     } catch (err) {
       cont.innerHTML = `<div class="modal-header"><h5 class="modal-title">Perfil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-danger mb-0">${esc(err.message)}</div></div>`;
     }
+  }
+
+  /* ------------------------------ RESERVA DE ESPACIOS ------------------------------ */
+  function ymdLocal(d) { const z = n => String(n).padStart(2, '0'); return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`; }
+  async function cargarReservas(fecha, silencioso) {
+    const el = $('#v-reservas');
+    S.resFecha = fecha || S.resFecha || ymdLocal(new Date());
+    if (!silencioso && !$('#rs-form')) cargando(el);
+    try { S.reservas = await api('reservas', { fecha: S.resFecha }); renderReservas(); } catch (err) { errorEn(el, err); }
+  }
+  function renderReservas() {
+    const d = S.reservas;
+    const [y, m, dd] = d.fecha.split('-').map(Number);
+    const fechaTxt = `${DOW_LARGO[new Date(y, m - 1, dd).getDay()]} ${dd} de ${MESES_LARGOS[m - 1]}`;
+    const item = it => {
+      const cls = it.tipo === 'RESERVA' ? 'primary' : it.estado === 'APROBADO' ? 'success' : 'warning';
+      return `<div class="d-flex align-items-start gap-2 small py-1">
+        <span class="badge text-bg-${cls} text-nowrap">${esc(fmtHora(it.inicio))}–${esc(fmtHora(it.fin))}</span>
+        <div class="flex-grow-1 min-w-0">${it.tipo === 'EVENTO' ? `<a href="#" data-act="ver" data-id="${esc(it.id)}">${esc(it.titulo)}</a>` : `<b>${esc(it.titulo)}</b>`}
+          <span class="text-muted">· ${esc(it.nombre)}${it.tipo === 'EVENTO' ? (it.estado === 'PENDIENTE' ? ' (evento pendiente)' : ' (evento)') : ''}</span></div>
+        ${it.puedeCancelar ? `<button class="btn btn-sm btn-link text-danger p-0" title="Cancelar reserva" data-act="rs-cancelar" data-id="${esc(it.id)}"><i class="bi bi-x-circle"></i></button>` : ''}
+      </div>`;
+    };
+    const formHtml = `
+      <form class="card" id="rs-form" novalidate><div class="card-header"><i class="bi bi-plus-circle me-1"></i>Nueva reserva</div><div class="card-body">
+        <div class="mb-3"><label class="form-label">Espacio *</label><select class="form-select" id="rs-espacio">${d.espacios.map(e => `<option value="${esc(e.nombre)}">${esc(e.nombre)}${e.nota ? ' — ' + esc(e.nota) : ''}</option>`).join('')}</select></div>
+        <div class="mb-3"><label class="form-label">Nombre *</label><input class="form-control" id="rs-nombre" maxlength="100" placeholder="Persona o grupo" value="${esc(d.nombreSugerido || '')}"></div>
+        <div class="mb-3"><label class="form-label">Motivo *</label><input class="form-control" id="rs-motivo" maxlength="200" placeholder="Ej.: Discipulado de jóvenes"></div>
+        <div class="mb-3"><label class="form-label">Día *</label><input type="date" class="form-control" id="rs-fecha" value="${esc(d.fecha)}" min="${esc(ymdLocal(new Date()))}"></div>
+        <div class="row g-2 mb-3"><div class="col-6"><label class="form-label">Desde *</label><input type="time" class="form-control" id="rs-desde"></div>
+          <div class="col-6"><label class="form-label">Hasta *</label><input type="time" class="form-control" id="rs-hasta"></div></div>
+        <div id="rs-aviso" class="small mb-2"></div>
+        <button class="btn btn-primary w-100" type="submit" id="rs-guardar"><i class="bi bi-check2-circle me-1"></i>Reservar</button>
+      </div></form>`;
+    const ocupacionHtml = `
+      <div class="card"><div class="card-header d-flex align-items-center justify-content-between gap-2">
+        <button class="btn btn-sm btn-light" data-act="rs-dia" data-delta="-1" aria-label="Día anterior"><i class="bi bi-chevron-left"></i></button>
+        <div class="text-center"><div class="fw-semibold text-capitalize">${esc(fechaTxt)}</div><a href="#" class="small" data-act="rs-hoy">Hoy</a></div>
+        <button class="btn btn-sm btn-light" data-act="rs-dia" data-delta="1" aria-label="Día siguiente"><i class="bi bi-chevron-right"></i></button>
+      </div><div class="card-body py-1">
+        ${d.ocupacion.map(o => `<div class="py-2 border-bottom">
+          <div class="d-flex justify-content-between align-items-center gap-2">
+            <div class="fw-semibold small">${esc(o.espacio)}${o.nota ? ` <span class="text-muted fw-normal">· ${esc(o.nota)}</span>` : ''}</div>
+            ${o.items.length ? '' : '<span class="badge text-bg-light border text-success">Libre todo el día</span>'}
+            <button class="btn btn-sm btn-link p-0 text-nowrap" data-act="rs-elegir" data-espacio="${esc(o.espacio)}">Reservar</button>
+          </div>
+          ${o.items.map(item).join('')}
+        </div>`).join('')}
+        <div class="d-flex flex-wrap gap-3 small text-muted py-2"><span><span class="badge text-bg-primary">&nbsp;</span> Reserva</span><span><span class="badge text-bg-success">&nbsp;</span> Evento</span><span><span class="badge text-bg-warning">&nbsp;</span> Evento pendiente</span></div>
+      </div></div>`;
+    const misHtml = d.mias.length ? `<div class="card mt-4"><div class="card-header"><i class="bi bi-bookmark-check me-1"></i>Mis próximas reservas</div><div class="card-body py-1">
+      ${d.mias.map(r => `<div class="person"><span class="avatar"><i class="bi bi-door-open"></i></span>
+        <div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(r.espacio)} · ${esc(r.titulo)}</div>
+          <div class="small text-muted text-truncate">${esc(fmtFecha(r.inicio))}, ${esc(fmtHora(r.inicio))}–${esc(fmtHora(r.fin))} hs · ${esc(r.nombre)}</div></div>
+        <button class="btn btn-sm btn-outline-danger" data-act="rs-cancelar" data-id="${esc(r.id)}">Cancelar</button></div>`).join('')}
+    </div></div>` : '';
+    // El formulario se conserva entre recargas para no perder lo que se está escribiendo.
+    const previo = $('#rs-form') && { espacio: $('#rs-espacio').value, nombre: $('#rs-nombre').value, motivo: $('#rs-motivo').value, desde: $('#rs-desde').value, hasta: $('#rs-hasta').value };
+    $('#v-reservas').innerHTML = `
+      <div class="mb-3"><h2 class="page-title"><i class="bi bi-door-open me-1"></i>Reserva de espacios</h2>
+        <div class="text-muted small">Reservá un espacio de la iglesia. A la derecha ves qué está ocupado cada día, con reservas y eventos de la agenda.</div></div>
+      <div class="row g-4"><div class="col-lg-4">${formHtml}</div><div class="col-lg-8">${ocupacionHtml}${misHtml}</div></div>`;
+    if (previo) { ['espacio', 'nombre', 'motivo', 'desde', 'hasta'].forEach(k => { $('#rs-' + k).value = previo[k]; }); }
+    $('#rs-form').addEventListener('submit', reservar);
+    $('#rs-fecha').addEventListener('change', e => { if (e.target.value) cargarReservas(e.target.value, true); });
+    ['#rs-espacio', '#rs-desde', '#rs-hasta'].forEach(s => $(s).addEventListener('input', avisoReserva));
+    avisoReserva();
+  }
+  /** Avisa en vivo si el horario elegido choca con algo del día que se está viendo. */
+  function avisoReserva() {
+    const d = S.reservas, esp = $('#rs-espacio').value, desde = $('#rs-desde').value, hasta = $('#rs-hasta').value, box = $('#rs-aviso');
+    if (!desde || !hasta) { box.innerHTML = ''; return; }
+    if (hasta <= desde) { box.innerHTML = '<span class="text-danger">El fin tiene que ser después del inicio.</span>'; return; }
+    const o = d.ocupacion.find(x => x.espacio === esp);
+    const a = d.fecha + 'T' + desde, b = d.fecha + 'T' + hasta; // fechas completas: sirve también para eventos de varios días
+    const choques = (o ? o.items : []).filter(it => it.inicio < b && it.fin > a);
+    box.innerHTML = choques.length
+      ? `<span class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>Choca con: ${choques.map(c => esc(fmtHora(c.inicio) + '–' + fmtHora(c.fin) + ' ' + c.titulo)).join(', ')}</span>`
+      : '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Disponible</span>';
+  }
+  async function reservar(e) {
+    e.preventDefault();
+    const payload = { espacio: $('#rs-espacio').value, nombre: $('#rs-nombre').value.trim(), motivo: $('#rs-motivo').value.trim(),
+      fecha: $('#rs-fecha').value, desde: $('#rs-desde').value, hasta: $('#rs-hasta').value };
+    if (payload.nombre.length < 2) return toast('Escribí el nombre.', 'warning');
+    if (payload.motivo.length < 3) return toast('Escribí el motivo.', 'warning');
+    if (!payload.fecha || !payload.desde || !payload.hasta) return toast('Completá el día y el horario.', 'warning');
+    const btn = $('#rs-guardar');
+    busy(btn, true, 'Reservando…');
+    try {
+      const r = await api('reservar', payload);
+      toast(`¡Listo! ${payload.espacio} reservado el ${fmtYmd(payload.fecha)} de ${payload.desde} a ${payload.hasta}.`);
+      if (r.aviso) toast(r.aviso, 'warning');
+      $('#rs-motivo').value = ''; $('#rs-desde').value = ''; $('#rs-hasta').value = '';
+      await cargarReservas(payload.fecha, true);
+    } catch (err) { toast(err.message, 'danger'); busy(btn, false); }
+  }
+  async function cancelarReserva(id) {
+    const ok = await ask({ title: 'Cancelar reserva', message: '¿Seguro que querés cancelar esta reserva? El espacio queda libre.', input: false, okText: 'Cancelar reserva', okClass: 'btn-danger' });
+    if (!ok) return;
+    try { await api('cancelarReserva', { id }); toast('Reserva cancelada.'); cargarReservas(S.resFecha, true); } catch (err) { toast(err.message, 'danger'); }
   }
 
   /* ------------------------------ EVENTOS FIJOS ------------------------------ */
@@ -2770,7 +2873,7 @@
       if (payload.ubicacionTipo !== 'IGLESIA' || !payload.espacio || !payload.inicio || !payload.fin) { box.innerHTML = ''; return; }
       try {
         const c = await api('conflictos', payload);
-        box.innerHTML = c.length ? `<div class="alert alert-warning small mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i><b>${esc(payload.espacio)}</b> ya está reservado en ese horario:<ul class="mb-0 mt-1">${c.map(x => `<li>${esc(x.titulo)} (${esc(x.departamento)}) · ${fmtCorta(x.inicio)}–${fmtHora(x.fin)} · ${ESTADOS[x.estado].txt}</li>`).join('')}</ul></div>` : '';
+        box.innerHTML = c.length ? `<div class="alert alert-warning small mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i><b>${esc(payload.espacio)}</b> ya está reservado en ese horario:<ul class="mb-0 mt-1">${c.map(x => `<li>${esc(x.titulo)} (${esc(x.departamento)}) · ${fmtCorta(x.inicio)}–${fmtHora(x.fin)} · ${x.estado === 'RESERVA' ? 'Reserva de espacio' : ESTADOS[x.estado].txt}</li>`).join('')}</ul></div>` : '';
       } catch (e) { box.innerHTML = ''; }
     }, 500);
   }
@@ -2858,6 +2961,19 @@
       case 'op-del': el.closest('.op-fila').remove(); break;
       case 'preg-add': $('#f-preguntas').insertAdjacentHTML('beforeend', filaPregunta('')); $('#f-preguntas .input-group:last-child input').focus(); break;
       case 'preg-del': el.closest('.input-group').remove(); break;
+      case 'rs-dia': {
+        const [y, m, dd] = S.resFecha.split('-').map(Number);
+        cargarReservas(ymdLocal(new Date(y, m - 1, dd + Number(el.dataset.delta))), true);
+        break;
+      }
+      case 'rs-hoy': cargarReservas(ymdLocal(new Date()), true); break;
+      case 'rs-elegir':
+        $('#rs-espacio').value = el.dataset.espacio;
+        $('#rs-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        $('#rs-motivo').focus();
+        avisoReserva();
+        break;
+      case 'rs-cancelar': cancelarReserva(id); break;
       case 'fijo-nuevo': abrirFijo(null); break;
       case 'fijo-editar': abrirFijo(S.fijos.series.find(s => s.id === id)); break;
       case 'fijos-generar':
