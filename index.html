@@ -642,7 +642,7 @@
             <label class="form-label d-block">Cargos <span class="text-muted small">(títulos, no dan permisos)</span></label>
             <div id="m-cargos" class="d-flex flex-wrap gap-3"></div>
           </div>
-          <label class="form-label">Áreas y roles *</label>
+          <label class="form-label">Otras áreas y roles <span class="text-muted small">(no hace falta repetir Diáconos u Obreros si marcaste el cargo)</span></label>
           <div id="m-asignaciones"></div>
           <button type="button" class="btn btn-sm btn-outline-primary mt-1" data-act="m-add"><i class="bi bi-plus-lg me-1"></i>Agregar otra área</button>
           <div class="small text-muted mt-2" id="m-otras"></div>
@@ -1259,17 +1259,21 @@
   function abrirMiembro(email) {
     const d = S.miembros, u = S.boot.user;
     const filas = email ? d.miembros.filter(m => m.email === email) : [];
-    const propias = filas.filter(m => m.editable), ajenas = filas.filter(m => !m.editable);
+    const cargos = filas.length ? filas[0].cargos : [];
+    // Las áreas que da un cargo (Diácono → Diáconos, Obrero → Obreros) no se listan aparte: las maneja el cargo.
+    const areasCargo = d.areasCargo || {};
+    const porCargo = m => m.rol === 'COLABORADOR' && Object.keys(areasCargo).some(k => cargos.includes(k) && areasCargo[k] === m.departamento);
+    const propias = filas.filter(m => m.editable && !porCargo(m)), ajenas = filas.filter(m => !m.editable);
     if (!filas.length) $('#form-miembro').reset();
     $('#m-titulo').textContent = filas.length ? 'Editar persona' : 'Agregar persona';
     $('#m-email').value = email || '';
     $('#m-email').readOnly = filas.length > 0;
     if (filas.length) $('#m-nombre').value = filas[0].nombre;
-    const cargos = filas.length ? filas[0].cargos : [];
     $('#m-cargos-wrap').classList.toggle('d-none', !d.puedeCargos);
-    $('#m-cargos').innerHTML = Object.keys(d.cargos).map(k => `<div class="form-check"><input class="form-check-input" type="checkbox" id="m-cargo-${k}" value="${k}" ${cargos.includes(k) ? 'checked' : ''}><label class="form-check-label" for="m-cargo-${k}">${esc(d.cargos[k])}</label></div>`).join('');
+    $('#m-cargos').innerHTML = Object.keys(d.cargos).map(k => `<div class="form-check"><input class="form-check-input" type="checkbox" id="m-cargo-${k}" value="${k}" ${cargos.includes(k) ? 'checked' : ''}><label class="form-check-label" for="m-cargo-${k}">${esc(d.cargos[k])}${areasCargo[k] ? ` <span class="text-muted small">→ queda en ${esc(areasCargo[k])}</span>` : ''}</label></div>`).join('');
     const sel = $('#eq-dep') && $('#eq-dep').value;
-    const iniciales = propias.length ? propias : [{ rol: 'COLABORADOR', departamento: sel || d.departamentos[0] }];
+    // Persona nueva: arranca con un área solo si se está mirando una en particular; si no, alcanza con marcar un cargo.
+    const iniciales = propias.length ? propias : (filas.length || !sel ? [] : [{ rol: 'COLABORADOR', departamento: sel }]);
     $('#m-asignaciones').innerHTML = iniciales.map(filaAsignacion).join('');
     $('#m-otras').innerHTML = ajenas.length ? '<i class="bi bi-info-circle me-1"></i>También es: ' + ajenas.map(m => `${esc(d.rolLabels[m.rol])} en ${esc(m.departamento)}`).join(' · ') : '';
     bootstrap.Modal.getOrCreateInstance('#modal-miembro').show();
@@ -1284,7 +1288,7 @@
     };
     if (!isEmail(payload.email)) return toast('Ingresá un correo válido.', 'warning');
     if (!payload.nombre) return toast('Ingresá el nombre.', 'warning');
-    if (!payload.asignaciones.length && !$('#m-otras').textContent) return toast('Agregá al menos un área con su rol.', 'warning');
+    if (!payload.asignaciones.length && !payload.cargos.length && !$('#m-otras').textContent) return toast('Marcá un cargo o agregá al menos un área con su rol.', 'warning');
     busy(btn, true, 'Guardando…');
     try {
       const r = await api('guardarPersona', payload);
