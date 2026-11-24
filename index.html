@@ -301,6 +301,7 @@
       <section id="v-areas" class="view d-none"></section>
       <section id="v-fijos" class="view d-none"></section>
       <section id="v-reservas" class="view d-none"></section>
+      <section id="v-visitas" class="view d-none"></section>
       <section id="v-links" class="view d-none"></section>
       <section id="v-inscripciones" class="view d-none"></section>
       <section id="v-proyecto" class="view d-none"></section>
@@ -846,7 +847,7 @@
     const btn = $('#form-codigo button[type=submit]');
     busy(btn, true, 'Verificando…');
     try {
-      const r = await rpc('verificarCodigo', $('#login-email').value.trim().toLowerCase(), code);
+      const r = await rpc('verificarCodigo', $('#login-email').value.trim().toLowerCase(), code, dispositivo());
       S.token = r.token;
       store.set('cca_token', r.token);
       showLoader(true);
@@ -884,7 +885,7 @@
   }
 
   async function iniciarApp() {
-    S.boot = await api('bootstrap');
+    S.boot = await api('bootstrap', { dispositivo: dispositivo() });
     const u = S.boot.user;
     $('#login').classList.add('d-none');
     $('#app').classList.remove('d-none');
@@ -929,6 +930,7 @@
       ['whatsapp', 'whatsapp', 'Avisos WhatsApp', u.organiza],
       ['links', 'link-45deg', 'Banco de links', u.canLinks],
       ['areas', 'diagram-3', 'Áreas', u.canAreas],
+      ['visitas', 'graph-up', 'Visitas', u.isAdmin],
       ['aprobaciones', 'patch-check', 'Aprobaciones', u.canApprove, c.aprobaciones],
       ['tesoreria', 'cash-coin', 'Tesorería', u.isTesoreria, c.tesoreria],
       ['equipos', 'people', 'Equipos', u.canManageTeams],
@@ -958,7 +960,7 @@
     asignaciones: cargarAsignaciones, equipos: cargarEquipos, bitacora: cargarBitacora, config: cargarConfig,
     tareas: cargarMisTareas, proyecto: () => cargarProyecto(S.proyectoId), whatsapp: cargarAvisosWa,
     areas: cargarAreas, inscripciones: () => cargarInscripciones(S.inscEventoId),
-    fijos: cargarFijos, links: cargarLinks, reservas: () => cargarReservas()
+    fijos: cargarFijos, links: cargarLinks, reservas: () => cargarReservas(), visitas: () => cargarVisitas()
   };
   function go(view) {
     const sub = v => v === 'proyecto' || v === 'inscripciones'; // pantallas que se abren desde un evento
@@ -1294,7 +1296,7 @@
       const r = await api('guardarPersona', payload);
       bootstrap.Modal.getInstance('#modal-miembro').hide();
       toast('Persona guardada' + (r.agregadas ? ` · ${r.agregadas} área(s) nueva(s)` : '') + (r.quitadas ? ` · ${r.quitadas} quitada(s)` : '') + '.');
-      S.boot = await api('bootstrap');
+      S.boot = await api('bootstrap', { dispositivo: dispositivo() });
       llenarSelectsFijos();
       construirNav();
       cargarEquipos();
@@ -1370,7 +1372,7 @@
         try {
           const cambios = await api('guardarConfig', { valores });
           toast(cambios.length ? 'Configuración guardada.' : 'No hubo cambios.');
-          S.boot = await api('bootstrap');
+          S.boot = await api('bootstrap', { dispositivo: dispositivo() });
         } catch (err) { toast(err.message, 'danger'); }
         busy(btn, false);
       });
@@ -1795,7 +1797,7 @@
       await api('guardarPerfil', payload);
       bootstrap.Modal.getInstance('#modal-perfil').hide();
       toast('Perfil guardado. ¡Gracias!');
-      S.boot = await api('bootstrap');
+      S.boot = await api('bootstrap', { dispositivo: dispositivo() });
       $('#u-nombre').textContent = S.boot.user.nombre;
       $('#u-avatar').textContent = initials(S.boot.user.nombre);
       llenarSelectsFijos();
@@ -1850,6 +1852,73 @@
     } catch (err) {
       cont.innerHTML = `<div class="modal-header"><h5 class="modal-title">Perfil</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="alert alert-danger mb-0">${esc(err.message)}</div></div>`;
     }
+  }
+
+  /* ------------------------------ VISITAS (Administración) ------------------------------ */
+  /** Descripción corta del dispositivo, para el registro de visitas. */
+  function dispositivo() {
+    const ua = navigator.userAgent || '';
+    const tipo = /iPad|Tablet/i.test(ua) ? 'Tablet' : /Mobi|Android|iPhone/i.test(ua) ? 'Celular' : 'Computadora';
+    const nav = /Edg\//.test(ua) ? 'Edge' : /OPR\/|Opera/.test(ua) ? 'Opera' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Otro';
+    const so = /Android/i.test(ua) ? 'Android' : /iPhone|iPad|iOS/i.test(ua) ? 'iPhone' : /Windows/i.test(ua) ? 'Windows' : /Mac OS/i.test(ua) ? 'Mac' : /Linux/i.test(ua) ? 'Linux' : '';
+    return tipo + ' · ' + nav + (so ? ' · ' + so : '');
+  }
+  async function cargarVisitas(dias) {
+    const el = $('#v-visitas');
+    S.visDias = dias || S.visDias || 30;
+    cargando(el);
+    try { S.visitas = await api('visitas', { dias: S.visDias }); renderVisitas(); } catch (err) { errorEn(el, err); }
+  }
+  function renderVisitas() {
+    const d = S.visitas, r = d.resumen;
+    const max = Math.max(1, ...d.porDia.map(x => x.visitas));
+    const icono = t => /Celular/.test(t) ? 'phone' : /Tablet/.test(t) ? 'tablet' : 'laptop';
+    $('#v-visitas').innerHTML = `
+      <div class="d-flex flex-wrap align-items-end justify-content-between gap-2 mb-3">
+        <div><h2 class="page-title"><i class="bi bi-graph-up me-1"></i>Visitas a la app</h2>
+          <div class="text-muted small">Quién entró y cuándo. Cada persona cuenta una visita cada 30 minutos; los ingresos con código se marcan aparte.</div></div>
+        <select class="form-select" style="max-width:200px" id="vis-dias">
+          ${[[7, 'Últimos 7 días'], [30, 'Últimos 30 días'], [90, 'Últimos 90 días'], [365, 'Último año']].map(([v, t]) => `<option value="${v}" ${d.dias === v ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+      </div>
+      <div class="row g-3 mb-4">
+        ${kpi('calendar-day', 'Visitas hoy', r.hoy, 'visitas', 'primary')}
+        ${kpi('calendar-week', 'Visitas en 7 días', r.semana, 'visitas', 'info')}
+        ${kpi('people', 'Personas que entraron', r.personas + ' / ' + r.registrados, 'visitas', 'success', 'en el período')}
+        ${kpi('person-x', 'Nunca entraron', d.sinIngresar.length, 'visitas', 'warning')}
+      </div>
+      <div class="card mb-4"><div class="card-header"><i class="bi bi-bar-chart me-1"></i>Visitas por día</div><div class="card-body">
+        <div class="d-flex align-items-end gap-1" style="height:120px">
+          ${d.porDia.map(x => `<div class="flex-fill rounded-top" title="${esc(fmtYmd(x.dia))}: ${x.visitas}" style="background:${x.visitas ? 'var(--cca)' : '#ECEBF5'};height:${Math.max(4, Math.round(x.visitas * 100 / max))}%"></div>`).join('')}
+        </div>
+        <div class="d-flex justify-content-between small text-muted mt-1"><span>${esc(fmtYmd(d.porDia[0].dia))}</span><span>Hoy</span></div>
+      </div></div>
+      <div class="row g-4">
+        <div class="col-lg-7"><div class="card"><div class="card-header"><i class="bi bi-person-lines-fill me-1"></i>Por persona</div><div class="card-body p-0"><div class="table-responsive">
+          <table class="table table-hover table-log mb-0 align-middle"><thead class="table-light"><tr><th>Persona</th><th>Última visita</th><th class="text-center">Visitas</th><th>Dispositivo</th></tr></thead><tbody>
+          ${d.porUsuario.length ? d.porUsuario.map(p => `<tr>
+            <td><a href="#" class="fw-semibold" data-act="ver-perfil" data-email="${esc(p.email)}">${esc(p.nombre || p.email)}</a><div class="small text-muted">${esc(p.rol)}</div></td>
+            <td class="text-nowrap small">${esc(fmtCorta(p.ultima))}</td>
+            <td class="text-center">${p.visitas}${p.ingresos ? `<div class="small text-muted">${p.ingresos} ingreso(s)</div>` : ''}</td>
+            <td class="small">${p.dispositivos.map(x => `<div class="text-nowrap"><i class="bi bi-${icono(x)} me-1"></i>${esc(x)}</div>`).join('') || '—'}</td></tr>`).join('')
+            : '<tr><td colspan="4" class="text-center text-muted py-4">Todavía no hay visitas en este período.</td></tr>'}
+          </tbody></table></div></div></div></div>
+        <div class="col-lg-5">
+          <div class="card mb-4"><div class="card-header"><i class="bi bi-clock-history me-1"></i>Últimas visitas</div><div class="card-body py-1" style="max-height:420px;overflow:auto">
+            ${d.recientes.length ? d.recientes.slice(0, 40).map(v => `<div class="person">
+              <span class="avatar"><i class="bi bi-${v.tipo === 'INGRESO' ? 'box-arrow-in-right' : icono(v.dispositivo)}"></i></span>
+              <div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(v.nombre || v.email)}</div>
+                <div class="small text-muted text-truncate">${esc(fmtCorta(v.fecha))}${v.tipo === 'INGRESO' ? ' · ingresó con código' : ''}${v.dispositivo ? ' · ' + esc(v.dispositivo) : ''}</div></div></div>`).join('')
+              : empty('clock', 'Sin visitas registradas.')}
+          </div></div>
+          <div class="card"><div class="card-header"><i class="bi bi-person-x me-1"></i>Registrados que nunca entraron (${d.sinIngresar.length})</div><div class="card-body py-1" style="max-height:320px;overflow:auto">
+            ${d.sinIngresar.length ? d.sinIngresar.map(p => `<div class="person"><span class="avatar">${esc(initials(p.nombre || p.email))}</span>
+              <div class="flex-grow-1 min-w-0"><div class="small fw-semibold text-truncate">${esc(p.nombre || p.email)}</div><div class="small text-muted text-truncate">${esc(p.email)}</div></div>
+              ${waBtn(waDe(p.email), p.nombre)}</div>`).join('') : empty('emoji-smile', '¡Todos entraron al menos una vez!')}
+          </div></div>
+        </div>
+      </div>`;
+    $('#vis-dias').addEventListener('change', e => cargarVisitas(Number(e.target.value)));
   }
 
   /* ------------------------------ RESERVA DE ESPACIOS ------------------------------ */
@@ -2180,7 +2249,7 @@
       await api('guardarArea', payload);
       bootstrap.Modal.getInstance('#modal-area').hide();
       toast(payload.original ? 'Área actualizada.' : 'Área creada. Ya podés asignarle personas y eventos.');
-      S.boot = await api('bootstrap');
+      S.boot = await api('bootstrap', { dispositivo: dispositivo() });
       llenarSelectsFijos();
       cargarAreas();
     } catch (err) { toast(err.message, 'danger'); }
@@ -3055,7 +3124,7 @@
       case 'tarea-check': marcarTarea(el); break;
       case 'plantilla': cargarPlantilla(); break;
       case 'reglas-guardar': guardarReglas(el); break;
-      case 'refrescar': S.boot = await api('bootstrap').catch(() => S.boot); llenarSelectsFijos(); construirNav(); recargarVista(); break;
+      case 'refrescar': S.boot = await api('bootstrap', { dispositivo: dispositivo() }).catch(() => S.boot); llenarSelectsFijos(); construirNav(); recargarVista(); break;
       case 'salir': salir(); break;
     }
   });
