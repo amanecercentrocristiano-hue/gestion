@@ -1222,7 +1222,7 @@
     if (!$('#eq-grid')) {
       el.innerHTML = `
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : u.isSecretaria ? 'Asigná encargados y colaboradores de cualquier área.' : 'Asigná colaboradores a tus áreas por correo electrónico.'} Tocá un nombre para ver su perfil.</div></div>
+          <div><h2 class="page-title">Equipos por área</h2><div class="text-muted small">${u.isAdmin ? 'Asigná encargados, colaboradores y roles pastorales por correo.' : (u.isSecretaria || u.isPastor) ? 'Asigná encargados y colaboradores de cualquier área.' : 'Asigná colaboradores a tus áreas por correo electrónico.'} Tocá un nombre para ver su perfil.</div></div>
           <div class="d-flex gap-2"><button class="btn btn-outline-secondary" data-act="eq-csv" title="Descargar para Excel"><i class="bi bi-filetype-csv me-1"></i>Excel</button>
           <button class="btn btn-primary" data-act="nuevo-miembro"><i class="bi bi-person-plus me-1"></i>Agregar persona</button></div>
         </div>
@@ -1239,7 +1239,7 @@
   const AYUDA_ROL = {
     SUPERADMIN: 'Pastor/a Principal: acceso total y aprobación de eventos.',
     ADMIN: 'Administración: gestiona equipos y configuración, y también aprueba eventos.',
-    PASTOR: 'Pastor/a: ve toda la agenda y puede crear eventos para cualquier área.',
+    PASTOR: 'Pastor/a: ve toda la agenda, crea eventos y carga encargados y colaboradores en cualquier área.',
     SECRETARIA: 'Secretaría: ve toda la agenda, crea eventos, carga personas y ve perfiles y bitácora (no aprueba).',
     ENCARGADO: 'Encargado/a: crea y edita eventos del área y asigna colaboradores.',
     COLABORADOR: 'Colaborador/a: ve los eventos aprobados de su área, recibe asignaciones y recordatorios.'
