@@ -902,8 +902,11 @@
     $$('.need-create').forEach(b => b.classList.toggle('d-none', !u.canCreate));
     $$('.need-series').forEach(b => b.classList.toggle('d-none', !u.canSeries));
     showLoader(false);
+    // ?vista=reservas (o agenda, tareas…) abre directamente esa pestaña.
+    const vistas = { reservas: 'reservas', agenda: 'eventos', tareas: 'tareas', asignaciones: 'asignaciones' };
+    const vistaInicial = vistas[(QS.get('vista') || '').toLowerCase()];
     if (PROYECTO_INICIAL) abrirProyecto(PROYECTO_INICIAL);
-    else go('inicio');
+    else go(vistaInicial || 'inicio');
     if (EVENTO_INICIAL) setTimeout(() => verEvento(EVENTO_INICIAL), 300);
   }
 
